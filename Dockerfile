@@ -1,9 +1,6 @@
 ARG           BUILDER_BASE=dubodubonduponey/base@sha256:b51f084380bc1bd2b665840317b6f19ccc844ee2fc7e700bf8633d95deba2819
 ARG           RUNTIME_BASE=dubodubonduponey/base@sha256:d28e8eed3e87e8dc5afdd56367d3cf2da12a0003d064b5c62405afbe4725ee99
 
-# sudo sh -c "echo 1 > /proc/sys/kernel/unprivileged_userns_clone"
-# docker run -ti --net dubo-vlan --entrypoint rootlesskit --privileged registry.dev.jsboot.space/dubodubonduponey/aptly:test-bk buildkitd --addr tcp://0.0.0.0:4242
-
 # hadolint ignore=DL3006
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-root
 
@@ -105,11 +102,48 @@ RUN           FLAGS="-extldflags -static"; \
               env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" go build -v -ldflags "-s -w $FLAGS" \
                 -o /dist/boot/bin/rootlesskit ./cmd/rootlesskit
 
+
+###################################################################
+# binfmt
+###################################################################
+# hadolint ignore=DL3006
+FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-binfmt
+
+COPY          build/main.go .
+
+# hadolint ignore=DL4006
+RUN           FLAGS="-extldflags \"-fno-PIC -static\""; \
+              env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" go build -buildmode pie -v -ldflags "-s -w $FLAGS" \
+                -o /dist/boot/bin/binfmt ./main.go
+
+###################################################################
+# newuid
+###################################################################
+FROM          $BUILDER_BASE                                                                                             AS builder-idmap
+ARG           GIT_REPO=github.com/shadow-maint/shadow
+ARG           GIT_VERSION=4.8.1
+
+WORKDIR       /shadow
+RUN           git clone git://$GIT_REPO .
+RUN           git checkout $GIT_VERSION
+
+RUN           set -eu; \
+              apt-get update && \
+              apt-get --no-install-recommends install -qq \
+                libcap-dev autopoint gettext byacc libcap2-bin xsltproc
+
+# RUN ./autogen.sh --help && exit 1
+# RUN apk add --no-cache autoconf automake build-base byacc gettext gettext-dev gcc git libcap-dev libtool libxslt
+RUN           ./autogen.sh --with-fcaps --disable-nls --without-audit --without-selinux --without-acl --without-attr --without-tcb --without-nscd --without-btrfs \
+                && make \
+                && mkdir -p /dist/boot/bin \
+                && cp src/newuidmap src/newgidmap /dist/boot/bin
+
 ###################################################################
 # Stargz
 ###################################################################
 # hadolint ignore=DL3006
-FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-stargz
+FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS xxx-ignored-builder-stargz
 ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
 ARG           GIT_VERSION=6ab4c0507ad44fa9d850c401849734795bea564c
 
@@ -131,7 +165,7 @@ RUN           FLAGS="-extldflags -static"; \
 # Containerd
 ###################################################################
 # hadolint ignore=DL3006
-FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-containerd
+FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS xxx-ignored-builder-containerd
 ARG           GIT_REPO=github.com/containerd/containerd
 ARG           GIT_VERSION=6b5fc7f2044797cde2b8eea8fa59cf754e7b5d30
 
@@ -153,6 +187,80 @@ RUN           set -eu; \
               env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" go build -v -ldflags "-s -w $FLAGS" -tags "$TAGS" \
                 -o /dist/boot/bin/containerd ./cmd/containerd
 
+###################################################################
+# Binfmt
+###################################################################
+# hadolint ignore=DL3006
+FROM          $BUILDER_BASE                                                                                             AS builder-qemu
+
+ARG           GIT_REPO=github.com/moby/qemu
+# 4.1.0
+ARG           GIT_VERSION=2d04bf7914ad68a6f83b8a480948e604bbe8fea2
+
+WORKDIR       $GOPATH/src/$GIT_REPO
+RUN           git clone git://$GIT_REPO .
+RUN           git checkout $GIT_VERSION
+
+ARG           VERSION=v4.1.0
+
+RUN           apt-get update && \
+              apt-get install -y \
+                  build-essential \
+                  git \
+                  libtool \
+                  libpixman-1-dev \
+                  libglib2.0-dev \
+                  pkg-config \
+                  python
+
+RUN           scripts/git-submodule.sh update \
+              ui/keycodemapdb \
+              tests/fp/berkeley-testfloat-3 \
+              tests/fp/berkeley-softfloat-3 \
+              dtc
+
+RUN           ./configure \
+                --prefix=/usr \
+                --with-pkgversion=$VERSION \
+                --enable-linux-user \
+                --disable-system \
+                --static \
+                --disable-blobs \
+                --disable-bluez \
+                --disable-brlapi \
+                --disable-cap-ng \
+                --disable-capstone \
+                --disable-curl \
+                --disable-curses \
+                --disable-docs \
+                --disable-gcrypt \
+                --disable-gnutls \
+                --disable-gtk \
+                --disable-guest-agent \
+                --disable-guest-agent-msi \
+                --disable-libiscsi \
+                --disable-libnfs \
+                --disable-mpath \
+                --disable-nettle \
+                --disable-opengl \
+                --disable-sdl \
+                --disable-spice \
+                --disable-tools \
+                --disable-vte \
+                --target-list="aarch64-linux-user arm-linux-user ppc64le-linux-user s390x-linux-user riscv64-linux-user"
+
+RUN           make -j "$(getconf _NPROCESSORS_ONLN)"
+RUN           make install
+
+#COPY          build/main.go .
+#RUN           env CGO_ENABLED=0 go build -buildmode pie -ldflags "-s -w ${ldflags} -extldflags \"-fno-PIC -static\"" -o /dist/boot/bin/binfmt ./main.go
+
+RUN           cp /usr/bin/qemu-* /dist/boot/bin/
+
+# CMD ["/usr/bin/binfmt"]
+
+
+
 #######################
 # Builder assembly
 #######################
@@ -161,14 +269,15 @@ FROM          $BUILDER_BASE                                                     
 
 #COPY          --from=builder-stargz     /dist/boot/bin /dist/boot/bin
 #COPY          --from=builder-containerd /dist/boot/bin /dist/boot/bin
-COPY          --from=builder-rootless   /dist/boot/bin /dist/boot/bin
-COPY          --from=builder-buildkit   /dist/boot/bin /dist/boot/bin
-COPY          --from=builder-runc       /dist/boot/bin /dist/boot/bin
+COPY          --from=builder-idmap      /dist /dist
+COPY          --from=builder-rootless   /dist /dist
+COPY          --from=builder-buildkit   /dist /dist
+COPY          --from=builder-runc       /dist /dist
+COPY          --from=builder-binfmt     /dist /dist
 
 RUN           chmod 555 /dist/boot/bin/*; \
               epoch="$(date --date "$BUILD_CREATED" +%s)"; \
               find /dist/boot/bin -newermt "@$epoch" -exec touch --no-dereference --date="@$epoch" '{}' +;
-
 
 #######################
 # Runtime
@@ -180,7 +289,6 @@ USER          root
 
 RUN           apt-get update -qq          && \
               apt-get install -qq --no-install-recommends \
-                uidmap=1:4.5-1.1 \
                 git=1:2.20.1-2+deb10u3 && \
               apt-get -qq autoremove      && \
               apt-get -qq clean           && \
@@ -188,19 +296,30 @@ RUN           apt-get update -qq          && \
               rm -rf /tmp/*               && \
               rm -rf /var/tmp/*
 
+COPY          --from=builder --chown=$BUILD_UID:root /dist .
+COPY          --from=builder-qemu --chown=$BUILD_UID:root /dist/boot/bin/* /usr/bin
+
+RUN           chown root:root /boot/bin/newuidmap \
+                && chown root:root /boot/bin/newgidmap \
+                && chmod u+s /boot/bin/newuidmap \
+                && chmod u+s /boot/bin/newgidmap
+
+RUN           echo dubo-dubon-duponey:100000:65536 | tee /etc/subuid | tee /etc/subgid
+
 USER          dubo-dubon-duponey
 
 ENV           PORT=4242
+ENV           XDG_RUNTIME_DIR=/data/runc
 
 VOLUME        /data
 VOLUME        /tmp
 
-COPY          --from=builder --chown=$BUILD_UID:root /dist .
-
 # System constants, unlikely to ever require modifications in normal use
 #ENV           HEALTHCHECK_URL=http://127.0.0.1:10042/healthcheck
 
-# HEALTHCHECK   --interval=30s --timeout=30s --start-period=10s --retries=1 CMD http-health || exit 1
+HEALTHCHECK   --interval=30s --timeout=30s --start-period=10s --retries=1 CMD BUILDKIT_HOST=tcp://127.0.0.1:$PORT buildctl debug workers || exit 1
+
+
 
 
 
