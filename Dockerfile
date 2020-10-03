@@ -10,14 +10,16 @@ RUN           set -eu; \
               dpkg --add-architecture armel && \
               dpkg --add-architecture armhf && \
               dpkg --add-architecture arm64 && \
-              dpkg --add-architecture amd64 && \
-              apt-get update && \
-              apt-get --no-install-recommends install -qq \
-                crossbuild-essential-s390x libseccomp-dev:s390x \
-                crossbuild-essential-ppc64el libseccomp-dev:ppc64el \
-                crossbuild-essential-armhf libseccomp-dev:armhf \
-                crossbuild-essential-arm64 libseccomp-dev:arm64 \
-                crossbuild-essential-amd64 libseccomp-dev:amd64
+              dpkg --add-architecture amd64
+
+# hadolint ignore=DL3009
+RUN           apt-get update -qq
+RUN           apt-get -qq --no-install-recommends install \
+                crossbuild-essential-s390x=12.6 libseccomp-dev:s390x=2.3.3-4 \
+                crossbuild-essential-ppc64el=12.6 libseccomp-dev:ppc64el=2.3.3-4 \
+                crossbuild-essential-armhf=12.6 libseccomp-dev:armhf=2.3.3-4 \
+                crossbuild-essential-arm64=12.6 libseccomp-dev:arm64=2.3.3-4 \
+                crossbuild-essential-amd64=12.6 libseccomp-dev:amd64=2.3.3-4
 
 ###################################################################
 # Runc
@@ -121,6 +123,7 @@ RUN           FLAGS="-extldflags \"-fno-PIC -static\""; \
 ###################################################################
 # newuid
 ###################################################################
+# hadolint ignore=DL3006
 FROM          $BUILDER_BASE                                                                                             AS builder-idmap
 ARG           GIT_REPO=github.com/shadow-maint/shadow
 ARG           GIT_VERSION=4.8.1
@@ -132,7 +135,7 @@ RUN           git checkout $GIT_VERSION
 RUN           set -eu; \
               apt-get update && \
               apt-get --no-install-recommends install -qq \
-                libcap-dev autopoint gettext byacc libcap2-bin xsltproc
+                libcap-dev=1:2.25-2 autopoint=0.19.8.1-9 gettext=0.19.8.1-9 byacc=20140715-1+b1 libcap2-bin=1:2.25-2 xsltproc=1.1.32-2.2~deb10u1
 
 # RUN ./autogen.sh --help && exit 1
 # RUN apk add --no-cache autoconf automake build-base byacc gettext gettext-dev gcc git libcap-dev libtool libxslt
@@ -177,7 +180,7 @@ RUN           git checkout $GIT_VERSION
 
 # hadolint ignore=DL4006
 RUN           set -eu; \
-              GO111MODULE=auto; \
+              export GO111MODULE=auto; \
               TAGS="apparmor no_btrfs no_devmapper no_cri"; \
               FLAGS="-X $GIT_REPO/version.Version=$BUILD_VERSION -X $GIT_REPO/version.Revision=$BUILD_REVISION -X $GIT_REPO/version.Package=$GIT_REPO"; \
               env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" go build -v -ldflags "-s -w $FLAGS -extldflags -static" -tags "$TAGS" \
@@ -205,15 +208,16 @@ RUN           git checkout $GIT_VERSION
 
 ARG           VERSION=v4.1.0
 
-RUN           apt-get update && \
-              apt-get install -y \
-                  build-essential \
-                  git \
-                  libtool \
-                  libpixman-1-dev \
-                  libglib2.0-dev \
-                  pkg-config \
-                  python
+RUN           apt-get update -qq && \
+              apt-get install -qq --no-install-recommends \
+                  build-essential=12.6 \
+                  libpixman-1-dev=0.36.0-1 \
+                  libglib2.0-dev=2.58.3-2+deb10u2
+
+#                  libtool \
+#                  git \
+#                  pkg-config \
+#                  python
 
 RUN           scripts/git-submodule.sh update \
               ui/keycodemapdb \
@@ -263,9 +267,7 @@ RUN           mkdir -p /dist/boot/bin/ && cp /usr/bin/qemu-* /dist/boot/bin/
 
 
 
-
-
-FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-overlay
+# hadolint ignore=DL3006
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-overlay
 RUN           apt-get update -qq          && \
               apt-get install -qq --no-install-recommends \
@@ -273,9 +275,11 @@ RUN           apt-get update -qq          && \
 
 ARG           FUSEOVERLAYFS_VERSION=v1.1.2
 ARG           TARGETARCH
-RUN           echo $TARGETARCH | sed -e s/^amd64$/x86_64/ -e s/^arm64$/aarch64/ -e s/^arm$/armv7l/ > /uname_m && \
+
+# hadolint ignore=DL4006
+RUN           echo "$TARGETARCH" | sed -e s/^amd64$/x86_64/ -e s/^arm64$/aarch64/ -e s/^arm$/armv7l/ > /uname_m && \
                 mkdir -p /dist/boot/bin && \
-                curl -sSL -o /dist/boot/bin/fuse-overlayfs https://github.com/containers/fuse-overlayfs/releases/download/${FUSEOVERLAYFS_VERSION}/fuse-overlayfs-$(cat /uname_m) && \
+                curl -sSL -o /dist/boot/bin/fuse-overlayfs https://github.com/containers/fuse-overlayfs/releases/download/"${FUSEOVERLAYFS_VERSION}"/fuse-overlayfs-"$(cat /uname_m)" && \
                 chmod +x /dist/boot/bin/fuse-overlayfs
 
 
@@ -326,6 +330,7 @@ RUN           chown root:root /boot/bin/newuidmap \
                 && chmod u+s /boot/bin/newuidmap \
                 && chmod u+s /boot/bin/newgidmap
 
+# hadolint ignore=DL4006
 RUN           echo dubo-dubon-duponey:100000:65536 | tee /etc/subuid | tee /etc/subgid
 
 USER          dubo-dubon-duponey
