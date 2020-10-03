@@ -59,7 +59,7 @@ RUN           set -eu; \
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-buildkit
 
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=3aa7902d40d8a7fe911ee35488985cb58a346710
+ARG           GIT_VERSION=2b6cccb9b3e930d2b9d18715553d0b56f2ce02b5
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -83,7 +83,9 @@ RUN           set -eu; \
               SRC="./cmd/buildctl"; \
               DEST="buildctl"; \
               env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" \
-                go build -v -ldflags "-s -w $FLAGS" -tags "$TAGS" -o /dist/boot/bin/"$DEST" "$SRC"
+                go build -v -ldflags "-s -w $FLAGS" -tags "$TAGS" -o /dist/boot/bin/"$DEST" "$SRC"; \
+              env GOOS=darwin GOARCH=amd64 \
+                go build -v -ldflags "-s -w $FLAGS" -tags "$TAGS" -o /dist/boot/bin/"$DEST"_mac "$SRC"
 
 ###################################################################
 # Rootless
@@ -255,9 +257,28 @@ RUN           make install
 #COPY          build/main.go .
 #RUN           env CGO_ENABLED=0 go build -buildmode pie -ldflags "-s -w ${ldflags} -extldflags \"-fno-PIC -static\"" -o /dist/boot/bin/binfmt ./main.go
 
-RUN           cp /usr/bin/qemu-* /dist/boot/bin/
+RUN           mkdir -p /dist/boot/bin/ && cp /usr/bin/qemu-* /dist/boot/bin/
 
 # CMD ["/usr/bin/binfmt"]
+
+
+
+
+
+FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-overlay
+FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-overlay
+RUN           apt-get update -qq          && \
+              apt-get install -qq --no-install-recommends \
+                curl=7.64.0-4+deb10u1
+
+ARG           FUSEOVERLAYFS_VERSION=v1.1.2
+ARG           TARGETARCH
+RUN           echo $TARGETARCH | sed -e s/^amd64$/x86_64/ -e s/^arm64$/aarch64/ -e s/^arm$/armv7l/ > /uname_m && \
+                mkdir -p /dist/boot/bin && \
+                curl -sSL -o /dist/boot/bin/fuse-overlayfs https://github.com/containers/fuse-overlayfs/releases/download/${FUSEOVERLAYFS_VERSION}/fuse-overlayfs-$(cat /uname_m) && \
+                chmod +x /dist/boot/bin/fuse-overlayfs
+
+
 
 
 
@@ -289,7 +310,7 @@ USER          root
 
 RUN           apt-get update -qq          && \
               apt-get install -qq --no-install-recommends \
-                git=1:2.20.1-2+deb10u3 && \
+                git=1:2.20.1-2+deb10u3 pigz=2.4-1 fuse3=3.4.1-1+deb10u1 xz-utils=5.2.4-1 && \
               apt-get -qq autoremove      && \
               apt-get -qq clean           && \
               rm -rf /var/lib/apt/lists/* && \
@@ -298,6 +319,7 @@ RUN           apt-get update -qq          && \
 
 COPY          --from=builder --chown=$BUILD_UID:root /dist .
 COPY          --from=builder-qemu --chown=$BUILD_UID:root /dist/boot/bin/* /usr/bin
+COPY          --from=builder-overlay --chown=$BUILD_UID:root /dist/boot/bin/* /usr/bin
 
 RUN           chown root:root /boot/bin/newuidmap \
                 && chown root:root /boot/bin/newgidmap \
@@ -309,7 +331,7 @@ RUN           echo dubo-dubon-duponey:100000:65536 | tee /etc/subuid | tee /etc/
 USER          dubo-dubon-duponey
 
 ENV           PORT=4242
-ENV           XDG_RUNTIME_DIR=/data/runc
+ENV           XDG_RUNTIME_DIR=/data
 
 VOLUME        /data
 VOLUME        /tmp
@@ -318,9 +340,6 @@ VOLUME        /tmp
 #ENV           HEALTHCHECK_URL=http://127.0.0.1:10042/healthcheck
 
 HEALTHCHECK   --interval=30s --timeout=30s --start-period=10s --retries=1 CMD BUILDKIT_HOST=tcp://127.0.0.1:$PORT buildctl debug workers || exit 1
-
-
-
 
 
 # RUN apk add --no-cache fuse3 git xz

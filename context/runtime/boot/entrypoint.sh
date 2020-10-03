@@ -13,6 +13,6 @@ mkdir -p "$XDG_RUNTIME_DIR" || {
 
 PORT="${PORT:-}"
 
-args=(rootlesskit --state-dir /data/rootlesskit buildkitd --oci-worker-no-process-sandbox --oci-worker true --containerd-worker false --oci-worker-snapshotter native --addr tcp://0.0.0.0:"$PORT" --config /config/buildkitd.toml --root /data/buildkit --rootless)
+args=(rootlesskit --state-dir /data/rootlesskit buildkitd --oci-worker true --containerd-worker false --oci-worker-snapshotter native --addr tcp://0.0.0.0:"$PORT" --config /config/buildkitd.toml --root /data/buildkit --rootless)
 
 exec "${args[@]}" "$@"
