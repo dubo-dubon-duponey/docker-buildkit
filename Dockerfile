@@ -1,7 +1,7 @@
 ARG           BUILDER_BASE=dubodubonduponey/base@sha256:b51f084380bc1bd2b665840317b6f19ccc844ee2fc7e700bf8633d95deba2819
 ARG           RUNTIME_BASE=dubodubonduponey/base@sha256:d28e8eed3e87e8dc5afdd56367d3cf2da12a0003d064b5c62405afbe4725ee99
 
-# hadolint ignore=DL3006
+# hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-root
 
 RUN           set -eu; \
@@ -24,7 +24,7 @@ RUN           apt-get -qq --no-install-recommends install \
 ###################################################################
 # Runc
 ###################################################################
-# hadolint ignore=DL3006
+# hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM builder-root                                                                    AS builder-runc
 
 # v1.0.0-rc92
@@ -57,7 +57,7 @@ RUN           set -eu; \
 ###################################################################
 # Buildkit
 ###################################################################
-# hadolint ignore=DL3006
+# hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-buildkit
 
 # 2b6cccb9b3e930d2b9d18715553d0b56f2ce02b5
@@ -94,7 +94,7 @@ RUN           set -eu; \
 ###################################################################
 # Rootless
 ###################################################################
-# hadolint ignore=DL3006
+# hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-rootless
 
 # 36f981d4cf0631b96775c5969df6d7a2df757441
@@ -115,7 +115,7 @@ RUN           FLAGS="-extldflags -static"; \
 ###################################################################
 # binfmt
 ###################################################################
-# hadolint ignore=DL3006
+# hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-binfmt
 
 COPY          build/main.go .
@@ -154,7 +154,7 @@ RUN           ./autogen.sh --with-fcaps --disable-nls --without-audit --without-
 ###################################################################
 # Stargz
 ###################################################################
-# hadolint ignore=DL3006
+# hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS xxx-ignored-builder-stargz
 
 #6ab4c0507ad44fa9d850c401849734795bea564c
@@ -179,7 +179,7 @@ RUN           FLAGS="-extldflags -static"; \
 ###################################################################
 # Containerd
 ###################################################################
-# hadolint ignore=DL3006
+# hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS xxx-ignored-builder-containerd
 #6b5fc7f2044797cde2b8eea8fa59cf754e7b5d30
 # 1.4.1
@@ -279,7 +279,7 @@ RUN           mkdir -p /dist/boot/bin/ && cp /usr/bin/qemu-* /dist/boot/bin/
 
 
 
-# hadolint ignore=DL3006
+# hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-overlay
 RUN           apt-get update -qq          && \
               apt-get install -qq --no-install-recommends \
