@@ -60,8 +60,10 @@ RUN           set -eu; \
 # hadolint ignore=DL3006
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-buildkit
 
+# 2b6cccb9b3e930d2b9d18715553d0b56f2ce02b5
+# November 16, 2020
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=2b6cccb9b3e930d2b9d18715553d0b56f2ce02b5
+ARG           GIT_VERSION=5ebb088b68359f6762d6b88408e4d3107d24e1ff
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -94,8 +96,11 @@ RUN           set -eu; \
 ###################################################################
 # hadolint ignore=DL3006
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-rootless
+
+# 36f981d4cf0631b96775c5969df6d7a2df757441
+# 0.11.1
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-ARG           GIT_VERSION=36f981d4cf0631b96775c5969df6d7a2df757441
+ARG           GIT_VERSION=803f1a04b09dfa4cdf1b744de53200943dc4069a
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -125,8 +130,10 @@ RUN           FLAGS="-extldflags \"-fno-PIC -static\""; \
 ###################################################################
 # hadolint ignore=DL3006
 FROM          $BUILDER_BASE                                                                                             AS builder-idmap
+
+# 4.8.1
 ARG           GIT_REPO=github.com/shadow-maint/shadow
-ARG           GIT_VERSION=4.8.1
+ARG           GIT_VERSION=2cc7da6058152ec0cd338d4e15d29bd7124ae3d7
 
 WORKDIR       /shadow
 RUN           git clone git://$GIT_REPO .
@@ -149,8 +156,11 @@ RUN           ./autogen.sh --with-fcaps --disable-nls --without-audit --without-
 ###################################################################
 # hadolint ignore=DL3006
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS xxx-ignored-builder-stargz
+
+#6ab4c0507ad44fa9d850c401849734795bea564c
+# November 16th, 2020
 ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
-ARG           GIT_VERSION=6ab4c0507ad44fa9d850c401849734795bea564c
+ARG           GIT_VERSION=7736074d78c929152cff14176338a73f1245b443
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -171,8 +181,10 @@ RUN           FLAGS="-extldflags -static"; \
 ###################################################################
 # hadolint ignore=DL3006
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS xxx-ignored-builder-containerd
+#6b5fc7f2044797cde2b8eea8fa59cf754e7b5d30
+# 1.4.1
 ARG           GIT_REPO=github.com/containerd/containerd
-ARG           GIT_VERSION=6b5fc7f2044797cde2b8eea8fa59cf754e7b5d30
+ARG           GIT_VERSION=c623d1b36f09f8ef6536a057bd658b3aa8632828
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
