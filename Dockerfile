@@ -1,6 +1,28 @@
-ARG           BUILDER_BASE=dubodubonduponey/base@sha256:b51f084380bc1bd2b665840317b6f19ccc844ee2fc7e700bf8633d95deba2819
-ARG           RUNTIME_BASE=dubodubonduponey/base@sha256:d28e8eed3e87e8dc5afdd56367d3cf2da12a0003d064b5c62405afbe4725ee99
+ARG           BUILDER_BASE=dubodubonduponey/base:builder
+ARG           RUNTIME_BASE=dubodubonduponey/base:runtime
 
+#######################
+# Goello
+#######################
+# hadolint ignore=DL3006,DL3029
+FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-goello
+
+ARG           GIT_REPO=github.com/dubo-dubon-duponey/goello
+ARG           GIT_VERSION=6f6c96ef8161467ab25be45fe3633a093411fcf2
+ARG           BUILD_TARGET=./cmd/server/main.go
+ARG           BUILD_OUTPUT=goello-server
+ARG           BUILD_FLAGS="-s -w"
+
+WORKDIR       $GOPATH/src/$GIT_REPO
+RUN           git clone git://$GIT_REPO .
+RUN           git checkout $GIT_VERSION
+# hadolint ignore=DL4006
+RUN           env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" go build -v \
+                -ldflags "$BUILD_FLAGS" -o /dist/boot/bin/"$BUILD_OUTPUT" "$BUILD_TARGET"
+
+#######################
+# Buildkit
+#######################
 # hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-root
 
@@ -71,10 +93,13 @@ RUN           git checkout $GIT_VERSION
 
 # XXX do we need cgo in the tags?
 # XXX what about -buildmode=pie ?
+
+# removing static for now: FLAGS=-extldflags -static TAGS=static_build
 # hadolint ignore=DL4006
 RUN           set -eu; \
-              FLAGS="-extldflags -static -X $GIT_REPO/version.Version=$BUILD_VERSION -X $GIT_REPO/version.Revision=$BUILD_REVISION -X $GIT_REPO/version.Package=$GIT_REPO"; \
-              TAGS="seccomp netgo static_build osusergo"; \
+              export CGO_ENABLED=1; \
+              FLAGS="-X $GIT_REPO/version.Version=$BUILD_VERSION -X $GIT_REPO/version.Revision=$BUILD_REVISION -X $GIT_REPO/version.Package=$GIT_REPO"; \
+              TAGS="seccomp netcgo osusergo cgo"; \
               SRC="./cmd/buildkitd"; \
               DEST="buildkitd"; \
               env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" \
@@ -82,14 +107,17 @@ RUN           set -eu; \
 
 # hadolint ignore=DL4006
 RUN           set -eu; \
-              FLAGS="-extldflags -static -X $GIT_REPO/version.Version=$BUILD_VERSION -X $GIT_REPO/version.Revision=$BUILD_REVISION -X $GIT_REPO/version.Package=$GIT_REPO"; \
+              export CGO_ENABLED=1; \
+              FLAGS="-X $GIT_REPO/version.Version=$BUILD_VERSION -X $GIT_REPO/version.Revision=$BUILD_REVISION -X $GIT_REPO/version.Package=$GIT_REPO"; \
               TAGS=""; \
               SRC="./cmd/buildctl"; \
               DEST="buildctl"; \
               env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" \
-                go build -v -ldflags "-s -w $FLAGS" -tags "$TAGS" -o /dist/boot/bin/"$DEST" "$SRC"; \
-              env GOOS=darwin GOARCH=amd64 \
-                go build -v -ldflags "-s -w $FLAGS" -tags "$TAGS" -o /dist/boot/bin/"$DEST"_mac "$SRC"
+                go build -v -ldflags "-s -w $FLAGS" -tags "$TAGS" -o /dist/boot/bin/"$DEST" "$SRC";
+                # \
+# Does not build anymore without static build - might have to forgo on this
+#              env GOOS=darwin GOARCH=amd64 \
+#                go build -v -ldflags "-s -w $FLAGS" -tags "$TAGS" -o /dist/boot/bin/"$DEST"_mac "$SRC"
 
 ###################################################################
 # Rootless
@@ -297,13 +325,15 @@ RUN           echo "$TARGETARCH" | sed -e s/^amd64$/x86_64/ -e s/^arm64$/aarch64
 
 
 
-
 #######################
 # Builder assembly
 #######################
 # hadolint ignore=DL3006
 FROM          $BUILDER_BASE                                                                                             AS builder
 
+#COPY          --from=builder-healthcheck /dist/boot/bin /dist/boot/bin
+COPY          --from=builder-goello /dist/boot/bin /dist/boot/bin
+#COPY          --from=builder-caddy /dist/boot/bin /dist/boot/bin
 #COPY          --from=builder-stargz     /dist/boot/bin /dist/boot/bin
 #COPY          --from=builder-containerd /dist/boot/bin /dist/boot/bin
 COPY          --from=builder-idmap      /dist /dist
@@ -324,9 +354,14 @@ FROM          $RUNTIME_BASE
 
 USER          root
 
+# Prepare dbus
+RUN           mkdir -p /run/dbus; chown $BUILD_UID:root /run/dbus; chmod 775 /run/dbus
+
+# ca-certificates=20200601~deb10u1 is not necessary in itself
 RUN           apt-get update -qq          && \
               apt-get install -qq --no-install-recommends \
-                git=1:2.20.1-2+deb10u3 pigz=2.4-1 fuse3=3.4.1-1+deb10u1 xz-utils=5.2.4-1 && \
+                git=1:2.20.1-2+deb10u3 pigz=2.4-1 fuse3=3.4.1-1+deb10u1 xz-utils=5.2.4-1 \
+                libnss-mdns=0.14.1-1 && \
               apt-get -qq autoremove      && \
               apt-get -qq clean           && \
               rm -rf /var/lib/apt/lists/* && \
@@ -347,7 +382,21 @@ RUN           echo dubo-dubon-duponey:100000:65536 | tee /etc/subuid | tee /etc/
 
 USER          dubo-dubon-duponey
 
+### Front server configuration
+# Port to use
 ENV           PORT=4242
+EXPOSE        4242
+
+### mDNS broadcasting
+# Enable/disable mDNS support
+ENV           MDNS=enabled
+# Name is used as a short description for the service
+ENV           MDNS_NAME="Fancy Service Name"
+# The service will be annonced and reachable at $MDNS_HOST.local
+ENV           MDNS_HOST=buildkit
+# Type being advertised
+ENV           MDNS_TYPE=_buildkit._tcp
+
 ENV           XDG_RUNTIME_DIR=/data
 
 VOLUME        /data
@@ -356,7 +405,7 @@ VOLUME        /tmp
 # System constants, unlikely to ever require modifications in normal use
 #ENV           HEALTHCHECK_URL=http://127.0.0.1:10042/healthcheck
 
-HEALTHCHECK   --interval=30s --timeout=30s --start-period=10s --retries=1 CMD BUILDKIT_HOST=tcp://127.0.0.1:$PORT buildctl debug workers || exit 1
+HEALTHCHECK   --interval=90s --timeout=30s --start-period=90s --retries=1 CMD BUILDKIT_HOST=tcp://127.0.0.1:$PORT buildctl debug workers || exit 1
 
 
 # RUN apk add --no-cache fuse3 git xz
