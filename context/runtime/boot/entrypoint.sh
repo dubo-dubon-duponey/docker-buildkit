@@ -37,7 +37,7 @@ readonly USERNAME="${USERNAME:-"$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c
 readonly PASSWORD="${PASSWORD:-$(caddy hash-password -algorithm bcrypt -salt "$SALT" -plaintext "$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64)")}"
 
 # Bonjour the container if asked to
-if [ "${MDNS:-}" == enabled ]; then
+if [ "${MDNS_ENABLED:-}" == true ]; then
   goello-server -name "$MDNS_NAME" -host "$MDNS_HOST" -port "$PORT" -type "$MDNS_TYPE" &
 fi
 

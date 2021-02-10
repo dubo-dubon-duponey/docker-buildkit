@@ -8,7 +8,7 @@ ARG           RUNTIME_BASE=dubodubonduponey/base:runtime
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-goello
 
 ARG           GIT_REPO=github.com/dubo-dubon-duponey/goello
-ARG           GIT_VERSION=6f6c96ef8161467ab25be45fe3633a093411fcf2
+ARG           GIT_VERSION=3799b6035dd5c4d5d1c061259241a9bedda810d6
 ARG           BUILD_TARGET=./cmd/server/main.go
 ARG           BUILD_OUTPUT=goello-server
 ARG           BUILD_FLAGS="-s -w"
@@ -49,9 +49,11 @@ RUN           apt-get -qq --no-install-recommends install \
 # hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM builder-root                                                                    AS builder-runc
 
-# v1.0.0-rc92
 ARG           GIT_REPO=github.com/opencontainers/runc
-ARG           GIT_VERSION=ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+# v1.0.0-rc92
+#ARG           GIT_VERSION=ff819c7e9184c13b7c2607fe6c30ae19403a7aff
+# v1.0.0-rc92
+ARG           GIT_VERSION=939ad4e3fcfa1ab531458355a73688c6f4ee5003
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -69,8 +71,8 @@ RUN           set -eu; \
               export CC=${ga}-linux-${abi}-gcc; \
               export CC_FOR_TARGET=${ga}-linux-${abi}-gcc; \
               export CGO_ENABLED=1; \
-              FLAGS="-extldflags -static"; \
-              TAGS="seccomp apparmor netgo static_build osusergo cgo"; \
+              FLAGS=""; \
+              TAGS="seccomp apparmor netcgo cgo"; \
               SRC="./"; \
               DEST="runc"; \
               env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" \
@@ -82,10 +84,11 @@ RUN           set -eu; \
 # hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-buildkit
 
-# 2b6cccb9b3e930d2b9d18715553d0b56f2ce02b5
-# November 16, 2020
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=5ebb088b68359f6762d6b88408e4d3107d24e1ff
+# November 16, 2020
+#ARG           GIT_VERSION=5ebb088b68359f6762d6b88408e4d3107d24e1ff
+# 0.8.1
+ARG           GIT_VERSION=8142d66b5ebde79846b869fba30d9d30633e74aa
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -99,7 +102,7 @@ RUN           git checkout $GIT_VERSION
 RUN           set -eu; \
               export CGO_ENABLED=1; \
               FLAGS="-X $GIT_REPO/version.Version=$BUILD_VERSION -X $GIT_REPO/version.Revision=$BUILD_REVISION -X $GIT_REPO/version.Package=$GIT_REPO"; \
-              TAGS="seccomp netcgo osusergo cgo"; \
+              TAGS="seccomp netcgo cgo"; \
               SRC="./cmd/buildkitd"; \
               DEST="buildkitd"; \
               env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's/^[^/]+\/([^/]+).*/\1/')" \
@@ -126,9 +129,11 @@ RUN           set -eu; \
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-rootless
 
 # 36f981d4cf0631b96775c5969df6d7a2df757441
-# 0.11.1
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-ARG           GIT_VERSION=803f1a04b09dfa4cdf1b744de53200943dc4069a
+# 0.11.1
+#ARG           GIT_VERSION=803f1a04b09dfa4cdf1b744de53200943dc4069a
+# Feb 1, 2021
+ARG           GIT_VERSION=fb4e5e34f3de09b0f573be1ccac1d97a35d260b7
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -238,6 +243,7 @@ RUN           set -eu; \
 # hadolint ignore=DL3006
 FROM          $BUILDER_BASE                                                                                             AS builder-qemu
 
+# XXX this is abandonware at this point - move upstream after some testing
 ARG           GIT_REPO=github.com/moby/qemu
 # 4.1.0
 ARG           GIT_VERSION=2d04bf7914ad68a6f83b8a480948e604bbe8fea2
@@ -313,7 +319,8 @@ RUN           apt-get update -qq          && \
               apt-get install -qq --no-install-recommends \
                 curl=7.64.0-4+deb10u1
 
-ARG           FUSEOVERLAYFS_VERSION=v1.1.2
+#ARG           FUSEOVERLAYFS_VERSION=v1.1.2
+ARG           FUSEOVERLAYFS_VERSION=v1.4.0
 ARG           TARGETARCH
 
 # hadolint ignore=DL4006
@@ -355,7 +362,7 @@ FROM          $RUNTIME_BASE
 USER          root
 
 # Prepare dbus
-RUN           mkdir -p /run/dbus; chown $BUILD_UID:root /run/dbus; chmod 775 /run/dbus
+RUN           mkdir -p /run/dbus; chown "$BUILD_UID":root /run/dbus; chmod 775 /run/dbus
 
 # ca-certificates=20200601~deb10u1 is not necessary in itself
 RUN           apt-get update -qq          && \
@@ -389,7 +396,7 @@ EXPOSE        4242
 
 ### mDNS broadcasting
 # Enable/disable mDNS support
-ENV           MDNS=enabled
+ENV           MDNS_ENABLED=true
 # Name is used as a short description for the service
 ENV           MDNS_NAME="Fancy Service Name"
 # The service will be annonced and reachable at $MDNS_HOST.local
