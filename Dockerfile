@@ -1,5 +1,5 @@
-ARG           BUILDER_BASE=dubodubonduponey/base:builder
-ARG           RUNTIME_BASE=dubodubonduponey/base:runtime
+ARG           BUILDER_BASE=dubodubonduponey/base@sha256:b51f084380bc1bd2b665840317b6f19ccc844ee2fc7e700bf8633d95deba2819
+ARG           RUNTIME_BASE=dubodubonduponey/base@sha256:d28e8eed3e87e8dc5afdd56367d3cf2da12a0003d064b5c62405afbe4725ee99
 
 #######################
 # Goello
@@ -9,7 +9,7 @@ FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                           
 
 ARG           GIT_REPO=github.com/dubo-dubon-duponey/goello
 ARG           GIT_VERSION=3799b6035dd5c4d5d1c061259241a9bedda810d6
-ARG           BUILD_TARGET=./cmd/server/main.go
+ARG           BUILD_TARGET=./cmd/server
 ARG           BUILD_OUTPUT=goello-server
 ARG           BUILD_FLAGS="-s -w"
 
@@ -21,7 +21,7 @@ RUN           env GOOS=linux GOARCH="$(printf "%s" "$TARGETPLATFORM" | sed -E 's
                 -ldflags "$BUILD_FLAGS" -o /dist/boot/bin/"$BUILD_OUTPUT" "$BUILD_TARGET"
 
 #######################
-# Buildkit
+# Builder root
 #######################
 # hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-root
@@ -51,9 +51,9 @@ FROM          --platform=$BUILDPLATFORM builder-root                            
 
 ARG           GIT_REPO=github.com/opencontainers/runc
 # v1.0.0-rc92
-#ARG           GIT_VERSION=ff819c7e9184c13b7c2607fe6c30ae19403a7aff
-# v1.0.0-rc92
-ARG           GIT_VERSION=939ad4e3fcfa1ab531458355a73688c6f4ee5003
+# ARG           GIT_VERSION=939ad4e3fcfa1ab531458355a73688c6f4ee5003
+# v1.0.0-rc95
+ARG           GIT_VERSION=b9ee9c6314599f1b4a7f497e1f1f856fe433d3b7
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -85,10 +85,8 @@ RUN           set -eu; \
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-buildkit
 
 ARG           GIT_REPO=github.com/moby/buildkit
-# November 16, 2020
-#ARG           GIT_VERSION=5ebb088b68359f6762d6b88408e4d3107d24e1ff
-# 0.8.1
-ARG           GIT_VERSION=8142d66b5ebde79846b869fba30d9d30633e74aa
+# 0.8.3
+ARG           GIT_VERSION=81c2cbd8a418918d62b71e347a00034189eea455
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -128,12 +126,9 @@ RUN           set -eu; \
 # hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS builder-rootless
 
-# 36f981d4cf0631b96775c5969df6d7a2df757441
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-# 0.11.1
-#ARG           GIT_VERSION=803f1a04b09dfa4cdf1b744de53200943dc4069a
-# Feb 1, 2021
-ARG           GIT_VERSION=fb4e5e34f3de09b0f573be1ccac1d97a35d260b7
+# 0.14.2
+ARG           GIT_VERSION=4cd567642273d369adaadcbadca00880552c1778
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -190,10 +185,9 @@ RUN           ./autogen.sh --with-fcaps --disable-nls --without-audit --without-
 # hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS xxx-ignored-builder-stargz
 
-#6ab4c0507ad44fa9d850c401849734795bea564c
-# November 16th, 2020
+# 0.6.0
 ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
-ARG           GIT_VERSION=7736074d78c929152cff14176338a73f1245b443
+ARG           GIT_VERSION=cb2f52ae082afc25c704de7ada28b5b89b1dbc4a
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -214,10 +208,9 @@ RUN           FLAGS="-extldflags -static"; \
 ###################################################################
 # hadolint ignore=DL3006,DL3029
 FROM          --platform=$BUILDPLATFORM $BUILDER_BASE                                                                   AS xxx-ignored-builder-containerd
-#6b5fc7f2044797cde2b8eea8fa59cf754e7b5d30
-# 1.4.1
+# 1.5.2
 ARG           GIT_REPO=github.com/containerd/containerd
-ARG           GIT_VERSION=c623d1b36f09f8ef6536a057bd658b3aa8632828
+ARG           GIT_VERSION=36cc874494a56a253cd181a1a685b44b58a2e34a
 
 WORKDIR       $GOPATH/src/$GIT_REPO
 RUN           git clone git://$GIT_REPO .
@@ -238,7 +231,7 @@ RUN           set -eu; \
                 -o /dist/boot/bin/containerd ./cmd/containerd
 
 ###################################################################
-# Binfmt
+# QEMU
 ###################################################################
 # hadolint ignore=DL3006
 FROM          $BUILDER_BASE                                                                                             AS builder-qemu
@@ -396,12 +389,12 @@ EXPOSE        4242
 
 ### mDNS broadcasting
 # Enable/disable mDNS support
-ENV           MDNS_ENABLED=true
+ENV           MDNS_ENABLED=false
 # Name is used as a short description for the service
-ENV           MDNS_NAME="Fancy Service Name"
+ENV           MDNS_NAME="Buildkit mDNS display name"
 # The service will be annonced and reachable at $MDNS_HOST.local
 ENV           MDNS_HOST=buildkit
-# Type being advertised
+# Type to advertise
 ENV           MDNS_TYPE=_buildkit._tcp
 
 ENV           XDG_RUNTIME_DIR=/data
