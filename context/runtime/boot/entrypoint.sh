@@ -59,25 +59,7 @@ mkdir -p /run/avahi-daemon
 rm -f /run/avahi-daemon/pid
 avahi-daemon --daemonize --no-chroot
 
-# TODO automate that as part of our Debian base image with facility to provide a root?
-# XXX this is probably not necessary anymore with the new strategy in terraform
-# Buildkit has to access our internal registry, so, this is necessary for now
-echo "-----BEGIN CERTIFICATE-----
-MIIBozCCAUmgAwIBAgIQBd+mZ7Uj+1lnuzBd1klrvzAKBggqhkjOPQQDAjAwMS4w
-LAYDVQQDEyVDYWRkeSBMb2NhbCBBdXRob3JpdHkgLSAyMDIwIEVDQyBSb290MB4X
-DTIwMTEzMDIzMTA0NVoXDTMwMTAwOTIzMTA0NVowMDEuMCwGA1UEAxMlQ2FkZHkg
-TG9jYWwgQXV0aG9yaXR5IC0gMjAyMCBFQ0MgUm9vdDBZMBMGByqGSM49AgEGCCqG
-SM49AwEHA0IABOzpNQ/wkHMGFibVR5Gk14PspP+kQ5LpR3XWwvD+rpJjhylvQLW3
-/ZvOzKHKHfilkOHI3FCHct8IImF5qhpbJF6jRTBDMA4GA1UdDwEB/wQEAwIBBjAS
-BgNVHRMBAf8ECDAGAQH/AgEBMB0GA1UdDgQWBBTGwiMW3cMgyEeZY09nyHbUWMCt
-5TAKBggqhkjOPQQDAgNIADBFAiBKZePDr6aXHiMwESluwVM1/y/WVMr4dPNcf2+4
-JX0jYwIhALi9+u+eHd2DGP93NXXMgcZMV+YwhSuaFu04pY6Mdwul
------END CERTIFICATE-----" > /etc/ssl/certs/ca.pem
-
-# /usr/local/share/ca-certificates/ca.crt
-# update-ca-certificates
-
-binfmt
+binfmt -dir /config/binfmt.d
 
 PORT="${PORT:-}"
 

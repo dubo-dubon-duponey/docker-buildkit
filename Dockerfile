@@ -400,7 +400,8 @@ ENV           MDNS_TYPE=_buildkit._tcp
 ENV           XDG_RUNTIME_DIR=/data
 
 VOLUME        /data
-VOLUME        /tmp
+VOLUME        /certs
+VOLUME        /run
 
 # System constants, unlikely to ever require modifications in normal use
 #ENV           HEALTHCHECK_URL=http://127.0.0.1:10042/healthcheck
