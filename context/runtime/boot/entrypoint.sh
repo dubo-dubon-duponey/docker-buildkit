@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 set -o errexit -o errtrace -o functrace -o nounset -o pipefail
 
+[ -w /certs ] || {
+  printf >&2 "/certs is not writable. Check your mount permissions.\n"
+  exit 1
+}
+
+[ -w /tmp ] || {
+  printf >&2 "/tmp is not writable. Check your mount permissions.\n"
+  exit 1
+}
+
 [ -w /data ] || {
   printf >&2 "/data is not writable. Check your mount permissions.\n"
   exit 1
 }
 
-# Helpers (TODO this is purely provisional right now)
-case "${1:-}" in
+# Helpers
+case "${1:-run}" in
   # Short hand helper to generate password hash
   "hash")
     shift
@@ -17,8 +27,12 @@ case "${1:-}" in
   ;;
   # Helper to get the ca.crt out (once initialized)
   "cert")
+    if [ "$TLS" == "" ]; then
+      printf >&2 "Your container is not configured for TLS termination - there is no local CA in that case."
+      exit 1
+    fi
     if [ "$TLS" != "internal" ]; then
-      echo "Your server is not configured in self-signing mode. This command is a no-op in that case."
+      printf >&2 "Your container uses letsencrypt - there is no local CA in that case."
       exit 1
     fi
     if [ ! -e /certs/pki/authorities/local/root.crt ]; then
@@ -28,13 +42,18 @@ case "${1:-}" in
     cat /certs/pki/authorities/local/root.crt
     exit
   ;;
+  "run")
+    # Bonjour the container if asked to. While the PORT is no guaranteed to be mapped on the host in bridge, this does not matter since mDNS will not work at all in bridge mode.
+    if [ "${MDNS_ENABLED:-}" == true ]; then
+      goello-server -name "$MDNS_NAME" -host "$MDNS_HOST" -port "$PORT" -type "$MDNS_TYPE" &
+    fi
+
+    # If we want TLS and authentication, start caddy in the background
+    if [ "$TLS" ]; then
+      HOME=/tmp/caddy-home exec caddy run -config /config/caddy/main.conf --adapter caddyfile &
+    fi
+  ;;
 esac
-
-# Bonjour the container if asked to
-if [ "${MDNS_ENABLED:-}" == true ]; then
-  goello-server -name "$MDNS_NAME" -host "$MDNS_HOST" -port "$PORT" -type "$MDNS_TYPE" &
-fi
-
 
 mkdir -p "$XDG_RUNTIME_DIR" || {
   printf >&2 "$XDG_RUNTIME_DIR is not writable. Check your mount permissions.\n"
