@@ -64,7 +64,7 @@ RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certific
               --mount=type=secret,id=NETRC \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_OPTIONS,dst=/etc/apt/apt.conf.d/dbdbdp.conf \
-              DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+              DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               dpkg --add-architecture "$DEB_TARGET_ARCH"; \
               apt-get update -qq && apt-get install -qq --no-install-recommends \
                 crossbuild-essential-"$DEB_TARGET_ARCH"=12.9 \
@@ -135,7 +135,7 @@ ARG           GOOS="$TARGETOS"
 ARG           GOARCH="$TARGETARCH"
 
 # hadolint ignore=SC2046
-RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export PKG_CONFIG_PATH="/usr/lib/${DEB_TARGET_MULTIARCH}/pkgconfig"; \
               export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
@@ -166,7 +166,7 @@ ARG           GOOS="$TARGETOS"
 ARG           GOARCH="$TARGETARCH"
 
 # hadolint ignore=SC2046
-RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export PKG_CONFIG_PATH="/usr/lib/${DEB_TARGET_MULTIARCH}/pkgconfig"; \
               export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
@@ -220,7 +220,7 @@ ARG           GOOS="$TARGETOS"
 ARG           GOARCH="$TARGETARCH"
 
 # hadolint ignore=SC2046
-RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
               export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
@@ -248,7 +248,7 @@ RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certific
               --mount=type=secret,id=NETRC \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_OPTIONS,dst=/etc/apt/apt.conf.d/dbdbdp.conf \
-              DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+              DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               apt-get update && \
               apt-get --no-install-recommends install -qq \
                 autopoint=0.21-4 \
@@ -259,7 +259,7 @@ RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certific
                 libcap-dev:"$DEB_TARGET_ARCH"=1:2.44-1 \
                 libcrypt-dev:"$DEB_TARGET_ARCH"=1:4.4.18-4
 
-RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
               ./autogen.sh --disable-nls --disable-man --without-audit --without-selinux --without-acl --without-attr --without-tcb --without-nscd --without-btrfs \
@@ -291,7 +291,7 @@ ARG           GOOS="$TARGETOS"
 ARG           GOARCH="$TARGETARCH"
 
 # hadolint ignore=SC2046
-RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
               export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
@@ -323,7 +323,7 @@ ARG           GOARCH="$TARGETARCH"
 # XXX do we still need auto?
 # hadolint ignore=SC2046
 RUN           export GO111MODULE=auto; \
-              DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+              DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
               export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
@@ -475,7 +475,7 @@ RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certific
               --mount=type=secret,id=NETRC \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_OPTIONS,dst=/etc/apt/apt.conf.d/dbdbdp.conf \
-              DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+              DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               apt-get update -qq && \
               apt-get install -qq --no-install-recommends \
                   libncurses5-dev:"$DEB_TARGET_ARCH" \
@@ -496,7 +496,7 @@ RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certific
 
 # [--extra-cflags=-mthreads]
 # PKG_CONFIG_LIBDIR=
-RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i686/")"; \
+RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export PKG_CONFIG_PATH="/usr/lib/${DEB_TARGET_MULTIARCH}/pkgconfig"; \
               export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
