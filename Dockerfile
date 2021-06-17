@@ -1,5 +1,5 @@
-ARG           FROM_IMAGE_BUILDER=dubodubonduponey/base@sha256:b51f084380bc1bd2b665840317b6f19ccc844ee2fc7e700bf8633d95deba2819
-ARG           FROM_IMAGE_RUNTIME=dubodubonduponey/base@sha256:d28e8eed3e87e8dc5afdd56367d3cf2da12a0003d064b5c62405afbe4725ee99
+ARG           FROM_IMAGE_BUILDER=ghcr.io/dubo-dubon-duponey/base:builder-bullseye-2021-06-01@sha256:addbd9b89d8973df985d2d95e22383961ba7b9c04580ac6a7f406a3a9ec4731e
+ARG           FROM_IMAGE_RUNTIME=ghcr.io/dubo-dubon-duponey/base:runtime-bullseye-2021-06-01@sha256:a2b1b2f69ed376bd6ffc29e2d240e8b9d332e78589adafadb84c73b778e6bc77
 
 # Cross notes:
 # https://github.com/docker/golang-cross/blob/master/Dockerfile
@@ -52,9 +52,6 @@ ARG           FROM_IMAGE_RUNTIME=dubodubonduponey/base@sha256:d28e8eed3e87e8dc5a
 # Builder root - could / should be part of base builder image?
 #######################
 FROM          --platform=$BUILDPLATFORM $FROM_IMAGE_BUILDER                                                             AS builder-cross
-
-# XXX port this to the base builder image
-SHELL         ["/bin/bash", "-o", "errexit", "-o", "errtrace", "-o", "functrace", "-o", "nounset", "-o", "pipefail", "-c"]
 
 RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certificates.crt \
               --mount=type=secret,id=CERTIFICATE \
@@ -138,8 +135,8 @@ ARG           GOARCH="$TARGETARCH"
 RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export PKG_CONFIG_PATH="/usr/lib/${DEB_TARGET_MULTIARCH}/pkgconfig"; \
-              export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
-              export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
+              export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
+              export CXX="${DEB_TARGET_GNU_TYPE}-g++"; \
               env GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)" go build -trimpath $(if [ "$CGO_ENABLED" = 1 ]; then printf "%s" "-buildmode pie"; fi) \
                 -mod=vendor \
                 -ldflags "$GO_LD_FLAGS" -tags "$GO_TAGS" -o /dist/boot/bin/"$GO_BUILD_OUTPUT" "$GO_BUILD_SOURCE"
@@ -169,8 +166,8 @@ ARG           GOARCH="$TARGETARCH"
 RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export PKG_CONFIG_PATH="/usr/lib/${DEB_TARGET_MULTIARCH}/pkgconfig"; \
-              export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
-              export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
+              export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
+              export CXX="${DEB_TARGET_GNU_TYPE}-g++"; \
               env GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)" go build -trimpath $(if [ "$CGO_ENABLED" = 1 ]; then printf "%s" "-buildmode pie"; fi) \
                 -ldflags "$GO_LD_FLAGS" -tags "$GO_TAGS" -o /dist/boot/bin/"$GO_BUILD_OUTPUT" "$GO_BUILD_SOURCE"
 
@@ -222,8 +219,8 @@ ARG           GOARCH="$TARGETARCH"
 # hadolint ignore=SC2046
 RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
-              export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
-              export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
+              export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
+              export CXX="${DEB_TARGET_GNU_TYPE}-g++"; \
               env GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)" go build -trimpath $(if [ "$CGO_ENABLED" = 1 ]; then printf "%s" "-buildmode pie"; fi) \
                 -ldflags "$GO_LD_FLAGS" -tags "$GO_TAGS" -o /dist/boot/bin/"$GO_BUILD_OUTPUT" "$GO_BUILD_SOURCE"
 
@@ -261,7 +258,7 @@ RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certific
 
 RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
-              export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
+              export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
               ./autogen.sh --disable-nls --disable-man --without-audit --without-selinux --without-acl --without-attr --without-tcb --without-nscd --without-btrfs \
                 --with-fcaps \
                 && make -j "$(getconf _NPROCESSORS_ONLN)" \
@@ -293,8 +290,8 @@ ARG           GOARCH="$TARGETARCH"
 # hadolint ignore=SC2046
 RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
-              export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
-              export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
+              export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
+              export CXX="${DEB_TARGET_GNU_TYPE}-g++"; \
               env GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)" go build -trimpath $(if [ "$CGO_ENABLED" = 1 ]; then printf "%s" "-buildmode pie"; fi) \
                 -ldflags "$GO_LD_FLAGS" -tags "$GO_TAGS" -o /dist/boot/bin/"$GO_BUILD_OUTPUT" "$GO_BUILD_SOURCE"; \
               env GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)" go build -trimpath $(if [ "$CGO_ENABLED" = 1 ]; then printf "%s" "-buildmode pie"; fi) \
@@ -325,8 +322,8 @@ ARG           GOARCH="$TARGETARCH"
 RUN           export GO111MODULE=auto; \
               DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
-              export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
-              export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
+              export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
+              export CXX="${DEB_TARGET_GNU_TYPE}-g++"; \
               env GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)" go build -trimpath $(if [ "$CGO_ENABLED" = 1 ]; then printf "%s" "-buildmode pie"; fi) \
                 -ldflags "$GO_LD_FLAGS" -tags "$GO_TAGS" -o /dist/boot/bin/"$GO_BUILD_OUTPUT" "$GO_BUILD_SOURCE"; \
               env GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)" go build -trimpath $(if [ "$CGO_ENABLED" = 1 ]; then printf "%s" "-buildmode pie"; fi) \
@@ -458,6 +455,10 @@ RUN           make install
 ###################################################################
 FROM          --platform=$BUILDPLATFORM builder-cross                                                                   AS builder-qemu
 
+#ARG           GIT_VERSION=v5.2.0
+#ARG           GIT_COMMIT=553032db17440f8de011390e5a1cfddd13751b0b
+#ARG           GIT_VERSION=v6.0.0
+#ARG           GIT_COMMIT=609d7596524ab204ccd71ef42c9eee4c7c338ea4
 ARG           GIT_REPO=github.com/qemu/qemu
 ARG           GIT_VERSION=v4.2.1
 ARG           GIT_COMMIT=6cdf8c4efa073eac7d5f9894329e2d07743c2955
@@ -480,27 +481,28 @@ RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certific
               apt-get install -qq --no-install-recommends \
                   libncurses5-dev:"$DEB_TARGET_ARCH" \
                   libglib2.0-dev:"$DEB_TARGET_ARCH"=2.66.8-1 \
-                  build-essential=12.9 \
                   bc \
-                  ca-certificates \
                   ccache \
-                  clang \
                   dbus \
                   gdb-multiarch \
                   gettext \
-                  git \
                   ninja-build \
                   pkg-config \
                   psmisc \
                   $(apt-get -s build-dep --no-install-recommends --arch-only qemu | grep -E ^Inst | grep -F '[all]' | cut -d\  -f2)
+
+#                  clang \
+#                  build-essential=12.9 \
+#                  git \
+#                  ca-certificates \
 
 # [--extra-cflags=-mthreads]
 # PKG_CONFIG_LIBDIR=
 RUN           DEB_TARGET_ARCH="$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")"; \
               eval "$(dpkg-architecture -A "$DEB_TARGET_ARCH")"; \
               export PKG_CONFIG_PATH="/usr/lib/${DEB_TARGET_MULTIARCH}/pkgconfig"; \
-              export CC="${DEB_TARGET_MULTIARCH}-gcc"; \
-              export CXX="${DEB_TARGET_MULTIARCH}-g++"; \
+              export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
+              export CXX="${DEB_TARGET_GNU_TYPE}-g++"; \
               ./configure \
                 --prefix=/dist/boot \
                 --with-pkgversion=$GIT_VERSION \
@@ -538,9 +540,6 @@ RUN           make -j "$(getconf _NPROCESSORS_ONLN)"
 RUN           make install
               # ; \
               # mkdir -p /dist/boot/bin/ && cp /usr/bin/qemu-* /dist/boot/bin/
-
-
-
 
 FROM          --platform=$BUILDPLATFORM $FROM_IMAGE_BUILDER                                                             AS builder-fuse-overlay
 
@@ -619,6 +618,7 @@ RUN           --mount=type=secret,mode=0444,id=CA,dst=/etc/ssl/certs/ca-certific
               rm -rf /var/tmp/*
 
 COPY          --from=builder --chown=$BUILD_UID:root /dist /
+# XXX is this necessary?
 COPY          --from=builder-qemu --chown=$BUILD_UID:root /dist/boot/bin/* /usr/bin
 COPY          --from=builder-fuse-overlay --chown=$BUILD_UID:root /dist/boot/bin/* /usr/bin
 
