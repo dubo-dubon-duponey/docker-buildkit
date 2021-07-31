@@ -78,7 +78,16 @@ mkdir -p /run/avahi-daemon
 rm -f /run/avahi-daemon/pid
 avahi-daemon --daemonize --no-chroot
 
-binfmt -dir /config/binfmt.d
+# Uninstall whatever is there already
+for emulator in $(binfmt | jq -rc .supported[] || true); do
+  binfmt --uninstall "$emulator" || true
+done
+for emulator in $(binfmt | jq -rc .emulators[] || true); do
+  binfmt --uninstall "$emulator" || true
+done
+
+# And install our own
+QEMU_BINARY_PATH=/boot/bin/ binfmt --install all
 
 PORT="${PORT:-}"
 
