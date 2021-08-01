@@ -18,6 +18,7 @@ ENV           GIT_COMMIT=609d7596524ab204ccd71ef42c9eee4c7c338ea4
 RUN           git clone --recurse-submodules git://"$GIT_REPO" .
 RUN           git checkout "$GIT_COMMIT"
 
+# hadolint ignore=DL3009
 RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,uid=100,id=CERTIFICATE \
               --mount=type=secret,uid=100,id=KEY \
@@ -74,6 +75,7 @@ RUN           --mount=type=secret,id=CA \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
 
 # Requires libseccomp-dev on all target platforms
+# hadolint ignore=DL3009
 RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,uid=100,id=CERTIFICATE \
               --mount=type=secret,uid=100,id=KEY \
@@ -111,6 +113,7 @@ RUN           --mount=type=secret,id=CA \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
 
 # Requires libseccomp-dev on all target platforms
+# hadolint ignore=DL3009
 RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,uid=100,id=CERTIFICATE \
               --mount=type=secret,uid=100,id=KEY \
@@ -147,6 +150,7 @@ ENV           GIT_COMMIT=2cc7da6058152ec0cd338d4e15d29bd7124ae3d7
 RUN           git clone --recurse-submodules git://"$GIT_REPO" .
 RUN           git checkout "$GIT_COMMIT"
 
+# hadolint ignore=DL3009
 RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,uid=100,id=CERTIFICATE \
               --mount=type=secret,uid=100,id=KEY \
@@ -406,7 +410,7 @@ RUN           eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" |
                 --disable-fuse \
                 --disable-vnc \
                 --prefix=/dist/boot \
-                --with-pkgversion=$GIT_VERSION \
+                --with-pkgversion="$GIT_VERSION" \
                 --enable-linux-user \
                 --disable-system \
                 --static \
