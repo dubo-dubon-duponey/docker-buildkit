@@ -91,19 +91,27 @@ QEMU_BINARY_PATH=/boot/bin/ binfmt --install all
 
 PORT="${PORT:-}"
 
-exec buildkitd \
-  --root /data/buildkit \
-  --debug \
-  --oci-worker true \
-  --containerd-worker false \
-  --oci-worker-snapshotter native \
-  --config /config/buildkitd/main.toml \
-  --addr tcp://0.0.0.0:"$PORT"
+# XXX What happens on renewal?
+# XXX local only valid for non public properties
 
-exit
 
-args=(rootlesskit --state-dir /data/rootlesskit buildkitd --oci-worker true --containerd-worker false --oci-worker-snapshotter native \
-  --addr tcp://0.0.0.0:"$PORT" --config /config/buildkitd.toml --root /data/buildkit \
-  --rootless)
+com=(buildkitd \
+    --root /data/buildkit \
+    --addr tcp://0.0.0.0:"$PORT"
+    --oci-worker true \
+    --containerd-worker false \
+    --oci-worker-snapshotter native \
+    --config /config/buildkitd/main.toml)
 
-exec "${args[@]}" "$@"
+if [ "$TLS" ]; then
+  com+=(--tlscert /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".crt \
+    --tlskey /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key \
+    --tlscacert /certs/pki/authorities/local/root.crt)
+fi
+
+if [ "${ROOTLESS:-}" ]; then
+  com+=(--rootless)
+  exec rootlesskit --state-dir /data/rootlesskit "${com[@]}"
+else
+  exec "${com[@]}"
+fi
