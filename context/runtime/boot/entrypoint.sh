@@ -27,11 +27,11 @@ case "${1:-run}" in
   ;;
   # Helper to get the ca.crt out (once initialized)
   "cert")
-    if [ "$TLS" == "" ]; then
+    if [ "${TLS:-}" == "" ]; then
       printf >&2 "Your container is not configured for TLS termination - there is no local CA in that case."
       exit 1
     fi
-    if [ "$TLS" != "internal" ]; then
+    if [ "${TLS:-}" != "internal" ]; then
       printf >&2 "Your container uses letsencrypt - there is no local CA in that case."
       exit 1
     fi
@@ -49,8 +49,8 @@ case "${1:-run}" in
     fi
 
     # If we want TLS and authentication, start caddy in the background
-    if [ "$TLS" ]; then
-      HOME=/tmp/caddy-home exec caddy run -config /config/caddy/main.conf --adapter caddyfile &
+    if [ "${TLS:-}" ]; then
+      HOME=/tmp/caddy-home caddy run -config /config/caddy/main.conf --adapter caddyfile &
     fi
   ;;
 esac
@@ -103,7 +103,7 @@ com=(buildkitd \
     --oci-worker-snapshotter native \
     --config /config/buildkitd/main.toml)
 
-if [ "$TLS" ]; then
+if [ "${TLS:-}" ]; then
   com+=(--tlscert /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".crt \
     --tlskey /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key \
     --tlscacert /certs/pki/authorities/local/root.crt)
