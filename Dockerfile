@@ -1,8 +1,9 @@
 ARG           FROM_REGISTRY=ghcr.io/dubo-dubon-duponey
 
-ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2021-08-01@sha256:f492d8441ddd82cad64889d44fa67cdf3f058ca44ab896de436575045a59604c
-ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2021-08-01@sha256:edc80b2c8fd94647f793cbcb7125c87e8db2424f16b9fd0b8e173af850932b48
-ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2021-08-01@sha256:87ec12fe94a58ccc95610ee826f79b6e57bcfd91aaeb4b716b0548ab7b2408a7
+ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2021-08-01@sha256:a49ab8a07a2da61eee63b7d9d33b091df190317aefb91203ad0ac41af18d5236
+ARG           FROM_IMAGE_AUDITOR=base:auditor-bullseye-2021-08-01@sha256:607d8b42af53ebbeb0064a5fd41895ab34ec670a810a704dbf53a2beb3ab769d
+ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2021-08-01@sha256:3fdb7b859e3fea12a7604ff4ae7e577628784ac1f6ea0d5609de65a4b26e5b3c
+ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2021-08-01@sha256:9e54b76442e4d8e1cad76acc3c982a5623b59f395b594af15bef6b489862ceac
 
 FROM          $FROM_REGISTRY/$FROM_IMAGE_TOOLS                                                                          AS builder-tools
 
@@ -11,12 +12,11 @@ FROM          $FROM_REGISTRY/$FROM_IMAGE_TOOLS                                  
 #######################
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-qemu
 
-ENV           GIT_REPO=github.com/qemu/qemu
-ENV           GIT_VERSION=v6.0.0
-ENV           GIT_COMMIT=609d7596524ab204ccd71ef42c9eee4c7c338ea4
+ARG           GIT_REPO=github.com/qemu/qemu
+ARG           GIT_VERSION=v6.0.0
+ARG           GIT_COMMIT=609d7596524ab204ccd71ef42c9eee4c7c338ea4
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .
-RUN           git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 
 # hadolint ignore=DL3009
 RUN           --mount=type=secret,uid=100,id=CA \
@@ -39,25 +39,24 @@ RUN           --mount=type=secret,uid=100,id=CA \
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-binfmt
 
-ENV           GIT_REPO=github.com/tonistiigi/binfmt
-ENV           GIT_VERSION=0a2d7e3
-ENV           GIT_COMMIT=0a2d7e397705782ab543b3c9a650d4bf8c70902a
+ARG           GIT_REPO=github.com/tonistiigi/binfmt
+ARG           GIT_VERSION=0a2d7e3
+ARG           GIT_COMMIT=0a2d7e397705782ab543b3c9a650d4bf8c70902a
 
 ENV           WITH_BUILD_SOURCE="./cmd/binfmt"
 ENV           WITH_BUILD_OUTPUT="binfmt"
 ENV           WITH_LDFLAGS="-X main.revision=${GIT_COMMIT} -X main.qemuVersion=${GIT_VERSION}"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .
-RUN           git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-runc
 
-ENV           GIT_REPO=github.com/opencontainers/runc
-ENV           GIT_VERSION=v1.0.1
-ENV           GIT_COMMIT=4144b63817ebcc5b358fc2c8ef95f7cddd709aa7
+ARG           GIT_REPO=github.com/opencontainers/runc
+ARG           GIT_VERSION=v1.0.1
+ARG           GIT_COMMIT=4144b63817ebcc5b358fc2c8ef95f7cddd709aa7
 
 ENV           WITH_BUILD_SOURCE="./"
 ENV           WITH_BUILD_OUTPUT="runc"
@@ -68,8 +67,7 @@ ENV           ENABLE_STATIC=true
 ENV           CGO_ENABLED=1
 ENV           GOFLAGS="-mod=vendor"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .
-RUN           git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
@@ -90,11 +88,11 @@ RUN           --mount=type=secret,uid=100,id=CA \
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-buildkit
 
-ENV           GIT_REPO=github.com/moby/buildkit
-#ENV           GIT_VERSION=v0.9.0
-#ENV           GIT_COMMIT=c8bb937807d405d92be91f06ce2629e6202ac7a9
-ENV           GIT_VERSION=master
-ENV           GIT_COMMIT=a83721aa6a2f538f4e58ada06aa76688ad39c147
+ARG           GIT_REPO=github.com/moby/buildkit
+#ARG           GIT_VERSION=v0.9.0
+#ARG           GIT_COMMIT=c8bb937807d405d92be91f06ce2629e6202ac7a9
+ARG           GIT_VERSION=master
+ARG           GIT_COMMIT=a83721aa6a2f538f4e58ada06aa76688ad39c147
 
 ENV           WITH_BUILD_SOURCE="./cmd/buildkitd"
 ENV           WITH_BUILD_OUTPUT="buildkitd"
@@ -106,8 +104,7 @@ ENV           ENABLE_STATIC=true
 ENV           CGO_ENABLED=1
 ENV           GOFLAGS="-mod=vendor"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .
-RUN           git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
@@ -128,27 +125,25 @@ RUN           --mount=type=secret,uid=100,id=CA \
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-rootless
 
-ENV           GIT_REPO=github.com/rootless-containers/rootlesskit
-ENV           GIT_VERSION=v0.14.2
-ENV           GIT_COMMIT=4cd567642273d369adaadcbadca00880552c1778
+ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
+ARG           GIT_VERSION=v0.14.2
+ARG           GIT_COMMIT=4cd567642273d369adaadcbadca00880552c1778
 
 ENV           WITH_BUILD_SOURCE="./cmd/rootlesskit"
 ENV           WITH_BUILD_OUTPUT="rootlesskit"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .
-RUN           git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-idmap
 
-ENV           GIT_REPO=github.com/shadow-maint/shadow
-ENV           GIT_VERSION=v4.8.1
-ENV           GIT_COMMIT=2cc7da6058152ec0cd338d4e15d29bd7124ae3d7
+ARG           GIT_REPO=github.com/shadow-maint/shadow
+ARG           GIT_VERSION=v4.8.1
+ARG           GIT_COMMIT=2cc7da6058152ec0cd338d4e15d29bd7124ae3d7
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .
-RUN           git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 
 # hadolint ignore=DL3009
 RUN           --mount=type=secret,uid=100,id=CA \
@@ -173,9 +168,9 @@ RUN           --mount=type=secret,uid=100,id=CA \
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-stargz
 
-ENV           GIT_REPO=github.com/containerd/stargz-snapshotter
-ENV           GIT_VERSION=0.6.4
-ENV           GIT_COMMIT=e7a4822db8e78f05d1310524cb3f628b1d7d5a74
+ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
+ARG           GIT_VERSION=0.6.4
+ARG           GIT_COMMIT=e7a4822db8e78f05d1310524cb3f628b1d7d5a74
 
 ENV           WITH_BUILD_SOURCE="./cmd/containerd-stargz-grpc"
 ENV           WITH_BUILD_OUTPUT="containerd-stargz-grpc"
@@ -183,8 +178,7 @@ ENV           WITH_BUILD_OUTPUT="containerd-stargz-grpc"
 ENV           ENABLE_STATIC=true
 ENV           CGO_ENABLED=1
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .
-RUN           git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
@@ -208,7 +202,7 @@ ENV           GOFLAGS="-trimpath ${ENABLE_PIE:+-buildmode=pie} ${GOFLAGS:-}"
 # - cannot compile fully statically with NETCGO
 RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
               [ "${CGO_ENABLED:-}" != 1 ] || { \
-                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")")"; \
+                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/^armv6$/armel/" -e "s/^armv7$/armhf/" -e "s/^ppc64le$/ppc64el/" -e "s/^386$/i386/")")"; \
                 export PKG_CONFIG="${DEB_TARGET_GNU_TYPE}-pkg-config"; \
                 export AR="${DEB_TARGET_GNU_TYPE}-ar"; \
                 export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
@@ -244,7 +238,7 @@ ENV           GOFLAGS="-trimpath ${ENABLE_PIE:+-buildmode=pie} ${GOFLAGS:-}"
 # - cannot compile fully statically with NETCGO
 RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
               [ "${CGO_ENABLED:-}" != 1 ] || { \
-                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")")"; \
+                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/^armv6$/armel/" -e "s/^armv7$/armhf/" -e "s/^ppc64le$/ppc64el/" -e "s/^386$/i386/")")"; \
                 export PKG_CONFIG="${DEB_TARGET_GNU_TYPE}-pkg-config"; \
                 export AR="${DEB_TARGET_GNU_TYPE}-ar"; \
                 export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
@@ -277,7 +271,7 @@ ENV           GOFLAGS="-trimpath ${ENABLE_PIE:+-buildmode=pie} ${GOFLAGS:-}"
 # - cannot compile fully statically with NETCGO
 RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
               [ "${CGO_ENABLED:-}" != 1 ] || { \
-                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")")"; \
+                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/^armv6$/armel/" -e "s/^armv7$/armhf/" -e "s/^ppc64le$/ppc64el/" -e "s/^386$/i386/")")"; \
                 export PKG_CONFIG="${DEB_TARGET_GNU_TYPE}-pkg-config"; \
                 export AR="${DEB_TARGET_GNU_TYPE}-ar"; \
                 export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
@@ -313,7 +307,7 @@ ENV           GOFLAGS="-trimpath ${ENABLE_PIE:+-buildmode=pie} ${GOFLAGS:-}"
 # - cannot compile fully statically with NETCGO
 RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
               [ "${CGO_ENABLED:-}" != 1 ] || { \
-                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")")"; \
+                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/^armv6$/armel/" -e "s/^armv7$/armhf/" -e "s/^ppc64le$/ppc64el/" -e "s/^386$/i386/")")"; \
                 export PKG_CONFIG="${DEB_TARGET_GNU_TYPE}-pkg-config"; \
                 export AR="${DEB_TARGET_GNU_TYPE}-ar"; \
                 export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
@@ -336,7 +330,7 @@ RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
 # XXX make it static?
 FROM          --platform=$BUILDPLATFORM fetcher-idmap                                                                   AS builder-idmap
 
-RUN           eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")")"; \
+RUN           eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/^armv6$/armel/" -e "s/^armv7$/armhf/" -e "s/^ppc64le$/ppc64el/" -e "s/^386$/i386/")")"; \
               export PKG_CONFIG="${DEB_TARGET_GNU_TYPE}-pkg-config"; \
               export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
               ./autogen.sh --disable-nls --disable-man --without-audit --without-selinux --without-acl --without-attr --without-tcb --without-nscd --without-btrfs \
@@ -365,7 +359,7 @@ ENV           GOFLAGS="-trimpath ${ENABLE_PIE:+-buildmode=pie} ${GOFLAGS:-}"
 # - cannot compile fully statically with NETCGO
 RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
               [ "${CGO_ENABLED:-}" != 1 ] || { \
-                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")")"; \
+                eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/^armv6$/armel/" -e "s/^armv7$/armhf/" -e "s/^ppc64le$/ppc64el/" -e "s/^386$/i386/")")"; \
                 export PKG_CONFIG="${DEB_TARGET_GNU_TYPE}-pkg-config"; \
                 export AR="${DEB_TARGET_GNU_TYPE}-ar"; \
                 export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
@@ -400,7 +394,7 @@ ENV           CXXFLAGS="-Werror=format-security -Wall $OPTIMIZATION_OPTIONS $DEB
 # XXXtemp
 
 # Disabling fuse and vnc is deviating from
-RUN           eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/armv6/armel/" -e "s/armv7/armhf/" -e "s/ppc64le/ppc64el/" -e "s/386/i386/")")"; \
+RUN           eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/^armv6$/armel/" -e "s/^armv7$/armhf/" -e "s/^ppc64le$/ppc64el/" -e "s/^386$/i386/")")"; \
               export PKG_CONFIG="${DEB_TARGET_GNU_TYPE}-pkg-config"; \
               export AR="${DEB_TARGET_GNU_TYPE}-ar"; \
               export CC="${DEB_TARGET_GNU_TYPE}-gcc"; \
@@ -461,7 +455,7 @@ RUN           make install
 #######################
 # Builder assembly
 #######################
-FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS builder
+FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_AUDITOR                                              AS builder
 
 COPY          --from=builder-binfmt         /dist /dist
 COPY          --from=builder-rootless       /dist /dist
@@ -545,7 +539,7 @@ EXPOSE        80
 ENV           LOG_LEVEL="warn"
 # Domain name to serve
 ENV           DOMAIN="$NICK.local"
-ENV           ADDITIONAL_DOMAINS="https://*.debian.org"
+ENV           ADDITIONAL_DOMAINS=""
 
 # Whether the server should behave as a proxy (disallows mTLS)
 ENV           SERVER_NAME="DuboDubonDuponey/1.0 (Caddy/2) [$NICK]"

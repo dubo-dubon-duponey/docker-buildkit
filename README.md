@@ -14,14 +14,14 @@ Experimental. This is mostly of interest for people who want to roll their own m
   * [x] linux/arm64
   * [x] linux/arm/v7
   * [x] linux/arm/v6
-  * [x] linux/ppc64
+  * [x] linux/ppc64le
   * [x] linux/s390x
 * hardened:
   * [x] image runs read-only
   * [ ] image runs with no capabilities, although apparmor and seccomp have to be disabled
   * [ ] process runs as a non-root user, disabled login, no shell
 * lightweight
-  * [x] based on our slim [Debian bullseye version (2021-08-01)](https://github.com/dubo-dubon-duponey/docker-debian)
+  * [x] based on our slim [Debian Bullseye](https://github.com/dubo-dubon-duponey/docker-debian)
   * [x] simple entrypoint script
   * [ ] multi-stage build ~~with no installed dependencies~~ with git installed for the runtime image
 * observable
