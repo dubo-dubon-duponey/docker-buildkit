@@ -6,6 +6,8 @@ ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2021-08-01@sha256:3fdb7b8
 ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2021-08-01@sha256:9e54b76442e4d8e1cad76acc3c982a5623b59f395b594af15bef6b489862ceac
 
 FROM          $FROM_REGISTRY/$FROM_IMAGE_TOOLS                                                                          AS builder-tools
+# XXX grrr
+FROM          $FROM_REGISTRY/tools:linux-dev-latest                                                                     AS builder-tools-dev
 
 #######################
 # Fetchers
@@ -461,7 +463,7 @@ COPY          --from=builder-binfmt         /dist /dist
 COPY          --from=builder-rootless       /dist /dist
 
 COPY          --from=builder-tools          /boot/bin/goello-server /dist/boot/bin
-COPY          --from=builder-tools          /boot/bin/buildctl      /dist/boot/bin
+COPY          --from=builder-tools-dev      /boot/bin/buildctl      /dist/boot/bin
 
 # TMP remove
 # COPY          --from=builder-fuse-overlay --chown=$BUILD_UID:root /dist /dist
