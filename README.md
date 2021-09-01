@@ -6,32 +6,28 @@ This is based on [BuildKit](https://github.com/moby/buildkit) with bits and piec
 
 Experimental. This is mostly of interest for people who want to roll their own multi-arch enabled buildkit nodes, as an example.
 
-Notes:
- * there is no support for containerd workers
- * this is focused on hardening, specifically, buildkit runs with rootlesskit
-
 ## Image features
 
- * multi-architecture:
-    * [x] linux/amd64
-    * [x] linux/arm64
-    * [x] linux/arm/v7
-    * [x] linux/s390x
-    * [x] linux/ppc64le
-    * [ ] linux/arm/v6 (may build, but unsupported right now)
-    * [ ] linux/386 (may build, but unsupported right now)
- * hardened:
-    * [x] image runs read-only
-    * [ ] image runs with no capabilities, although apparmor and seccomp have to be disabled
-    * [x] process runs as a non-root user, disabled login, no shell
- * lightweight
-    * [x] based on our slim [Debian buster version](https://github.com/dubo-dubon-duponey/docker-debian)
-    * [x] simple entrypoint script
-    * [ ] multi-stage build ~~with no installed dependencies~~ with git installed for the runtime image
- * observable
-    * [x] healthcheck
-    * [x] log to stdout
-    * [ ] ~~prometheus endpoint~~ not applicable
+* multi-architecture:
+  * [x] linux/amd64
+  * [x] linux/386
+  * [x] linux/arm64
+  * [x] linux/arm/v7
+  * [x] linux/arm/v6
+  * [x] linux/ppc64le
+  * [x] linux/s390x
+* hardened:
+  * [x] image runs read-only
+  * [ ] image runs with no capabilities, although apparmor and seccomp have to be disabled
+  * [ ] process runs as a non-root user, disabled login, no shell
+* lightweight
+  * [x] based on our slim [Debian Bullseye](https://github.com/dubo-dubon-duponey/docker-debian)
+  * [x] simple entrypoint script
+  * [ ] multi-stage build ~~with no installed dependencies~~ with git installed for the runtime image
+* observable
+  * [x] healthcheck
+  * [x] log to stdout
+  * [ ] ~~prometheus endpoint~~ (TODO)
 
 ## Run
 
@@ -41,7 +37,7 @@ docker run -d --rm \
     --volume $(pwd)/data:/data \
     --name bk \
     --security-opt seccomp=unconfined --security-opt apparmor=unconfined \
-    registry.dev.jsboot.space/dubodubonduponey/buildkit
+    ghcr.io/dubo-dubon-duponey/buildkit
 ```
 
 ## Moar?
