@@ -15,8 +15,8 @@ FROM          $FROM_REGISTRY/tools:linux-dev-latest                             
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-qemu
 
 ARG           GIT_REPO=github.com/qemu/qemu
-ARG           GIT_VERSION=v6.0.0
-ARG           GIT_COMMIT=609d7596524ab204ccd71ef42c9eee4c7c338ea4
+ARG           GIT_VERSION=v6.1.0
+ARG           GIT_COMMIT=f9baca549e44791be0dd98de15add3d8452a8af0
 
 RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 
@@ -57,8 +57,8 @@ RUN           --mount=type=secret,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-runc
 
 ARG           GIT_REPO=github.com/opencontainers/runc
-ARG           GIT_VERSION=v1.0.1
-ARG           GIT_COMMIT=4144b63817ebcc5b358fc2c8ef95f7cddd709aa7
+ARG           GIT_VERSION=v1.0.2
+ARG           GIT_COMMIT=52b36a2dd837e8462de8e01458bf02cf9eea47dd
 
 ENV           WITH_BUILD_SOURCE="./"
 ENV           WITH_BUILD_OUTPUT="runc"
@@ -93,8 +93,12 @@ FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER      
 ARG           GIT_REPO=github.com/moby/buildkit
 #ARG           GIT_VERSION=v0.9.0
 #ARG           GIT_COMMIT=c8bb937807d405d92be91f06ce2629e6202ac7a9
-ARG           GIT_VERSION=master
-ARG           GIT_COMMIT=a83721aa6a2f538f4e58ada06aa76688ad39c147
+# Previous good point
+#ARG           GIT_VERSION=a83721a
+#ARG           GIT_COMMIT=a83721aa6a2f538f4e58ada06aa76688ad39c147
+# Before massive, potentially damaging cache refactor
+ARG           GIT_VERSION=f314c4b
+ARG           GIT_COMMIT=f314c4bd0375b97d711d9cfe3898463238f9fff9
 
 ENV           WITH_BUILD_SOURCE="./cmd/buildkitd"
 ENV           WITH_BUILD_OUTPUT="buildkitd"
@@ -128,8 +132,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-rootless
 
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-ARG           GIT_VERSION=v0.14.2
-ARG           GIT_COMMIT=4cd567642273d369adaadcbadca00880552c1778
+ARG           GIT_VERSION=v0.14.5
+ARG           GIT_COMMIT=1216988f0e4f48a70ce849a8f690352aaeae8c13
 
 ENV           WITH_BUILD_SOURCE="./cmd/rootlesskit"
 ENV           WITH_BUILD_OUTPUT="rootlesskit"
@@ -171,8 +175,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-stargz
 
 ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
-ARG           GIT_VERSION=0.6.4
-ARG           GIT_COMMIT=e7a4822db8e78f05d1310524cb3f628b1d7d5a74
+ARG           GIT_VERSION=v0.8.0
+ARG           GIT_COMMIT=4ffd0f67d3ed4945cc43243c3a31b35e94004788
 
 ENV           WITH_BUILD_SOURCE="./cmd/containerd-stargz-grpc"
 ENV           WITH_BUILD_OUTPUT="containerd-stargz-grpc"
