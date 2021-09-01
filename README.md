@@ -37,7 +37,7 @@ docker run -d --rm \
     --volume $(pwd)/data:/data \
     --name bk \
     --security-opt seccomp=unconfined --security-opt apparmor=unconfined \
-    registry.dev.jsboot.space/dubodubonduponey/buildkit
+    ghcr.io/dubo-dubon-duponey/buildkit
 ```
 
 ## Moar?
