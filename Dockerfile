@@ -385,7 +385,6 @@ RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
 
 ###################################################################
 # QEMU cross
-# XXX -Werror=stringop-overflow= is tripping a problem on armhf, so, no armhf build at this point
 ###################################################################
 FROM          --platform=$BUILDPLATFORM fetcher-qemu                                                                    AS builder-qemu
 
@@ -393,7 +392,8 @@ ARG           TARGETARCH
 ARG           TARGETVARIANT
 
 # ../target/m68k/translate.c triggers errors on maybe-uninitialized
-ENV           CFLAGS="$CFLAGS -Wno-maybe-uninitialized"
+# ppc and possibly armhf have issues with stringop-overflow
+ENV           CFLAGS="$CFLAGS -Wno-maybe-uninitialized -Wno-stringop-overflow"
 
 # XXXtemp - base image should ship that
 ENV           CXXFLAGS="-Werror=format-security -Wall $OPTIMIZATION_OPTIONS $DEBUGGING_OPTIONS $PREPROCESSOR_OPTIONS $COMPILER_OPTIONS"
