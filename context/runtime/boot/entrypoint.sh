@@ -49,8 +49,9 @@ case "${1:-run}" in
     fi
 
     # If we want TLS and authentication, start caddy in the background
+    # XXX btw relying on caddy to do this is problematic
     if [ "${TLS:-}" ]; then
-      HOME=/tmp/caddy-home caddy run -config /config/caddy/main.conf --adapter caddyfile &
+      HOME=/tmp/caddy-home PORT=44444 caddy run -config /config/caddy/main.conf --adapter caddyfile &
     fi
   ;;
 esac
@@ -89,7 +90,7 @@ done
 # And install our own
 QEMU_BINARY_PATH=/boot/bin/ binfmt --install all
 
-PORT="${PORT:-}"
+# PORT="${PORT:-}"
 
 # XXX What happens on renewal?
 # XXX local only valid for non public properties
@@ -107,6 +108,11 @@ if [ "${TLS:-}" ]; then
   com+=(--tlscert /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".crt \
     --tlskey /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key \
     --tlscacert /certs/pki/authorities/local/root.crt)
+
+  while [ ! -e /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key ]; do
+    echo "Buildkit is waiting on certificate to be ready"
+    sleep 1
+  done
 fi
 
 if [ "${ROOTLESS:-}" ]; then
