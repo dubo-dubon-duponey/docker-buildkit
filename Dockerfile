@@ -468,6 +468,9 @@ COPY          --from=builder-rootless       /dist /dist
 
 COPY          --from=builder-tools          /boot/bin/goello-server /dist/boot/bin
 COPY          --from=builder-tools-dev      /boot/bin/buildctl      /dist/boot/bin
+COPY          --from=builder-tools          /boot/bin/caddy          /dist/boot/bin
+# Not necessary for now
+# RUN           setcap 'cap_net_bind_service+ep' /dist/boot/bin/caddy
 
 # TMP remove
 # COPY          --from=builder-fuse-overlay --chown=$BUILD_UID:root /dist /dist
@@ -551,7 +554,12 @@ ENV           ADDITIONAL_DOMAINS=""
 ENV           SERVER_NAME="DuboDubonDuponey/1.0 (Caddy/2) [$NICK]"
 
 # Control wether tls is going to be "internal" (eg: self-signed), or alternatively an email address to enable letsencrypt
-ENV           TLS="internal"
+# XXX disable by default for now until:
+# - figure out a better solution that misusing caddy to manage and rotate the certs
+# - figure out buildkit behavior wrt cert rotation (bounce?)
+# - figure out performance impact of TLS over buildtime
+ENV           TLS=""
+# "internal"
 # 1.2 or 1.3
 ENV           TLS_MIN=1.2
 # Either require_and_verify or verify_if_given
