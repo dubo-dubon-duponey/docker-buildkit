@@ -1,0 +1,8 @@
+#[registry."registry.local"]
+#  mirrors = ["hub.docker.io"]
+#  http = true
+#  insecure = true
+#  ca=["/etc/config/myca.pem"]
+#  [[registry."registry.local".keypair]]
+#    key="/etc/config/key.pem"
+#    cert="/etc/config/cert.pem"
