@@ -93,7 +93,7 @@ QEMU_BINARY_PATH=/boot/bin/ binfmt --install all
 
 com=(buildkitd \
     --root /data/buildkit \
-    --addr tcp://0.0.0.0:"$PORT"
+    --addr tcp://0.0.0.0:"$PORT_HTTPS"
     --oci-worker true \
     --containerd-worker false \
     --oci-worker-snapshotter native \
