@@ -519,8 +519,8 @@ COPY          --from=builder-qemu           /dist /dist
 COPY          --from=builder-buildkit       /dist /dist
 COPY          --from=builder-runc           /dist /dist
 
-COPY          --from=builder-ghost           /dist /dist
-RUN           setcap 'cap_net_bind_service+ep' /dist/boot/bin/ghostunnel
+# COPY          --from=builder-ghost           /dist /dist
+# RUN           setcap 'cap_net_bind_service+ep' /dist/boot/bin/ghostunnel
 
 RUN           chmod 555 /dist/boot/bin/*; \
               epoch="$(date --date "$BUILD_CREATED" +%s)"; \
