@@ -13,6 +13,18 @@ helpers::dir::writable /tmp
 helpers::dir::writable /data
 helpers::dir::writable "$XDG_RUNTIME_DIR" create
 
+sidecar::tls::start(){
+  local flags=(--cacert /certs/pki/authorities/local/root.crt \
+    --cert /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".crt \
+    --key /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key \
+    --timed-reload 300s \
+  )
+
+  # --disable-authentication
+  # XXX switch to unix socks for buildkit
+  ghostunnel "${flags[@]}" server --listen "0.0.0.0:443" --target "unix:/data/buildkitd.sock" --allow-all
+}
+
 # Helpers
 case "${1:-run}" in
   # Short hand helper to generate password hash
@@ -43,7 +55,7 @@ case "${1:-run}" in
     # If we want TLS and authentication, start caddy in the background
     # XXX btw relying on caddy to do this is problematic
     if [ "${TLS:-}" ]; then
-      XDG_CONFIG_HOME=/tmp PORT=44444 caddy run -config /config/caddy/main.conf --adapter caddyfile &
+      PORT_HTTP=8080 PORT_HTTPS=4443 start::sidecar &
     fi
   ;;
 esac
@@ -91,15 +103,24 @@ QEMU_BINARY_PATH=/boot/bin/ binfmt --install all
   mdns::start &
 }
 
+# Start ghost
+sidecar::tls::start &
+
 com=(buildkitd \
     --root /data/buildkit \
-    --addr tcp://0.0.0.0:"$PORT_HTTPS"
     --oci-worker true \
     --containerd-worker false \
     --oci-worker-snapshotter native \
     --config /config/buildkitd/main.toml)
 
-if [ "${TLS:-}" ]; then
+
+# unix:///datarun/buildkit/buildkitd.sock
+[ "${NOU:-}" ] \
+  && com+=(--addr unix:///data/buildkitd.sock) \
+  || com+=(--addr tcp://0.0.0.0:"$PORT_HTTPS")
+
+
+if [ "${TLS:-}" ] && [ ! "${NOU:-}" ]; then
   com+=(--tlscert /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".crt \
     --tlskey /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key \
     --tlscacert /certs/pki/authorities/local/root.crt)
