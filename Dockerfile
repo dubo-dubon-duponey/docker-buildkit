@@ -449,8 +449,8 @@ RUN           make install
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-ghost
 
 ARG           GIT_REPO=github.com/ghostunnel/ghostunnel
-ARG           GIT_VERSION=f71137b
-ARG           GIT_COMMIT=f71137b46c6aab933c0cdb2e9797a95d30bfdb73
+ARG           GIT_VERSION=v1.6.0
+ARG           GIT_COMMIT=5a237d19fc2cb7db4fa82b10b207ef2efd909cb5
 
 ENV           WITH_BUILD_SOURCE="."
 ENV           WITH_BUILD_OUTPUT="ghostunnel"
@@ -519,8 +519,8 @@ COPY          --from=builder-qemu           /dist /dist
 COPY          --from=builder-buildkit       /dist /dist
 COPY          --from=builder-runc           /dist /dist
 
-# COPY          --from=builder-ghost           /dist /dist
-# RUN           setcap 'cap_net_bind_service+ep' /dist/boot/bin/ghostunnel
+COPY          --from=builder-ghost           /dist /dist
+RUN           setcap 'cap_net_bind_service+ep' /dist/boot/bin/ghostunnel
 
 RUN           chmod 555 /dist/boot/bin/*; \
               epoch="$(date --date "$BUILD_CREATED" +%s)"; \
@@ -599,6 +599,7 @@ ENV           TLS_MIN=1.3
 #ENV           TLS_ISSUER="Dubo Dubon Duponey"
 # Either disable_redirects or ignore_loaded_certs if one wants the redirects
 ENV           TLS_AUTO=disable_redirects
+ENV           TLS_SERVER="https://acme-v02.api.letsencrypt.org/directory"
 # Either require_and_verify or verify_if_given, or "" to disable mTLS altogether
 ENV           MTLS="require_and_verify"
 # Root certificate to trust for mTLS
