@@ -495,7 +495,22 @@ RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
 #######################
 # Builder assembly
 #######################
-FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_AUDITOR                                              AS builder
+FROM          $FROM_REGISTRY/$FROM_IMAGE_AUDITOR                                              AS assembly
+
+RUN           --mount=type=secret,uid=100,id=CA \
+              --mount=type=secret,uid=100,id=CERTIFICATE \
+              --mount=type=secret,uid=100,id=KEY \
+              --mount=type=secret,uid=100,id=GPG.gpg \
+              --mount=type=secret,id=NETRC \
+              --mount=type=secret,id=APT_SOURCES \
+              --mount=type=secret,id=APT_CONFIG \
+              apt-get update -qq && apt-get install -qq --no-install-recommends \
+                libnss-mdns=0.14.1-2 && \
+              apt-get -qq autoremove      && \
+              apt-get -qq clean           && \
+              rm -rf /var/lib/apt/lists/* && \
+              rm -rf /tmp/*               && \
+              rm -rf /var/tmp/*
 
 COPY          --from=builder-binfmt         /dist /dist
 COPY          --from=builder-rootless       /dist /dist
@@ -522,6 +537,9 @@ COPY          --from=builder-runc           /dist /dist
 COPY          --from=builder-ghost           /dist /dist
 RUN           setcap 'cap_net_bind_service+ep' /dist/boot/bin/ghostunnel
 
+RUN           cp /usr/sbin/avahi-daemon                 /dist/boot/bin
+RUN           setcap 'cap_chown+ei cap_dac_override+ei' /dist/boot/bin/avahi-daemon
+
 RUN           chmod 555 /dist/boot/bin/*; \
               epoch="$(date --date "$BUILD_CREATED" +%s)"; \
               find /dist/boot -newermt "@$epoch" -exec touch --no-dereference --date="@$epoch" '{}' +;
@@ -533,12 +551,6 @@ FROM          $FROM_REGISTRY/$FROM_IMAGE_RUNTIME
 
 USER          root
 
-# Prepare dbus
-RUN           mkdir -p /run/dbus; chown "$BUILD_UID":root /run/dbus; chmod 775 /run/dbus
-
-# ca-certificates=20200601~deb10u1 is not necessary in itself
-# Removing fuse for now - fuse-overlay is just too buggy
-# fuse3=3.10.3-1 \
 RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,uid=100,id=CERTIFICATE \
               --mount=type=secret,uid=100,id=KEY \
@@ -546,24 +558,24 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=NETRC \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_CONFIG \
-              apt-get update -qq && apt-get install -qq --no-install-recommends \
+              apt-get update -qq \
+              && apt-get install -qq --no-install-recommends \
                 git=1:2.30.2-1 \
                 pigz=2.6-1 \
                 xz-utils=5.2.5-2 \
                 jq=1.6-2.1 \
-                libnss-mdns=0.14.1-2 && \
-              apt-get -qq autoremove      && \
-              apt-get -qq clean           && \
-              rm -rf /var/lib/apt/lists/* && \
-              rm -rf /tmp/*               && \
-              rm -rf /var/tmp/*
+                libnss-mdns=0.14.1-2 \
+              && apt-get -qq autoremove       \
+              && apt-get -qq clean            \
+              && rm -rf /var/lib/apt/lists/*  \
+              && rm -rf /tmp/*                \
+              && rm -rf /var/tmp/*
+
+RUN           ln -s "$XDG_STATE_HOME"/avahi-daemon /run
 
 RUN           echo dubo-dubon-duponey:100000:65536 | tee /etc/subuid | tee /etc/subgid
 
-ENV           XDG_RUNTIME_DIR=/data
-VOLUME        /run
-
-COPY          --from=builder --chown=$BUILD_UID:root /dist /
+COPY          --from=assembly --chown=$BUILD_UID:root /dist /
 
 RUN           chown root:root /boot/bin/newuidmap \
                 && chown root:root /boot/bin/newgidmap \
@@ -572,6 +584,17 @@ RUN           chown root:root /boot/bin/newuidmap \
 
 USER          dubo-dubon-duponey
 
+ENV           MDNS_NSS_ENABLED=true
+
+
+# Prepare dbus
+#RUN           mkdir -p /run/dbus; chown "$BUILD_UID":root /run/dbus; chmod 775 /run/dbus
+# VOLUME        /run
+
+
+# XXX why?
+# ENV           XDG_RUNTIME_DIR=/data
+
 # Current config below is full-blown regular caddy config, which is only partly useful here
 # since caddy only role is to provide and renew TLS certificates
 
@@ -579,22 +602,25 @@ ENV           _SERVICE_NICK="buildkit"
 ENV           _SERVICE_TYPE="buildkit"
 
 ### Front server configuration
-# Port to use
-ENV           PORT_HTTPS=443
-ENV           PORT_HTTP=80
+## Advanced settings that usually should not be changed
+# Ports for http and https - recent changes in docker make it no longer necessary to have caps, plus we have our NET_BIND_SERVICE cap set anyhow - it's 2021, there is no reason to keep on venerating privileged ports
+ENV           ADVANCED_PORT_HTTPS=443
+ENV           ADVANCED_PORT_HTTP=80
 EXPOSE        443
 EXPOSE        80
+# By default, tls should be restricted to 1.3 - you may downgrade to 1.2+ for compatibility with older clients (webdav client on macos, older browsers)
+ENV           ADVANCED_TLS_MIN=1.3
+# Name advertised by Caddy in the server http header
+ENV           ADVANCED_SERVER_NAME="DuboDubonDuponey/1.0 (Caddy/2) [$_SERVICE_NICK]"
+# Root certificate to trust for mTLS - this is not used if MTLS is disabled
+ENV           ADVANCED_MTLS_TRUST="/certs/mtls_ca.crt"
 # Log verbosity for
 ENV           LOG_LEVEL="warn"
 # Domain name to serve
 ENV           DOMAIN="$_SERVICE_NICK.local"
 ENV           ADDITIONAL_DOMAINS=""
-# Whether the server should behave as a proxy (disallows mTLS)
-ENV           SERVER_NAME="DuboDubonDuponey/1.0 (Caddy/2) [$_SERVICE_NICK]"
 # Control wether tls is going to be "internal" (eg: self-signed), or alternatively an email address to enable letsencrypt - use "" to disable TLS entirely
 ENV           TLS="internal"
-# 1.2 or 1.3
-ENV           TLS_MIN=1.3
 # Issuer name to appear in certificates
 #ENV           TLS_ISSUER="Dubo Dubon Duponey"
 # Either disable_redirects or ignore_loaded_certs if one wants the redirects
@@ -602,8 +628,6 @@ ENV           TLS_AUTO=disable_redirects
 ENV           TLS_SERVER="https://acme-v02.api.letsencrypt.org/directory"
 # Either require_and_verify or verify_if_given, or "" to disable mTLS altogether
 ENV           MTLS="require_and_verify"
-# Root certificate to trust for mTLS
-ENV           MTLS_TRUST="/certs/mtls_ca.crt"
 # Realm for authentication - set to "" to disable authentication entirely
 ENV           AUTH="My Precious Realm"
 # Provide username and password here (call the container with the "hash" command to generate a properly encrypted password, otherwise, a random one will be generated)
