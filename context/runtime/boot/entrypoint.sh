@@ -55,7 +55,7 @@ case "${1:-run}" in
     # If we want TLS and authentication, start caddy in the background
     # XXX btw relying on caddy to do this is problematic
     if [ "${TLS:-}" ]; then
-      PORT_HTTP=8080 PORT_HTTPS=4443 start::sidecar &
+      ADVANCED_PORT_HTTP=8080 ADVANCED_PORT_HTTPS=4443 start::sidecar &
     fi
   ;;
 esac
@@ -72,11 +72,13 @@ helpers::dbus(){
   done
 }
 
-helpers::dbus
+#helpers::dbus
 
-helpers::dir::writable "/run/avahi-daemon" create
-rm -f /run/avahi-daemon/pid
-avahi-daemon --daemonize --no-chroot
+#helpers::dir::writable "/run/avahi-daemon" create
+#rm -f /run/avahi-daemon/pid
+#avahi-daemon --daemonize --no-chroot
+
+[ "${MDNS_NSS_ENABLED:-}" != true ] || mdns::resolver::start
 
 # Uninstall whatever is there already
 for emulator in $(binfmt | jq -rc .supported[] || true); do
@@ -91,16 +93,12 @@ QEMU_BINARY_PATH=/boot/bin/ binfmt --install all
 
 # PORT="${PORT:-}"
 
-# XXX What happens on renewal?
-# XXX local only valid for non public properties
-
-
 # mDNS blast if asked to
 [ ! "${MDNS_HOST:-}" ] || {
-  _mdns_port="$([ "$TLS" != "" ] && printf "%s" "${PORT_HTTPS:-443}" || printf "%s" "${PORT_HTTP:-80}")"
-  [ ! "${MDNS_STATION:-}" ] || mdns::add "_workstation._tcp" "$MDNS_HOST" "${MDNS_NAME:-}" "$_mdns_port"
-  mdns::add "${MDNS_TYPE:-_http._tcp}" "$MDNS_HOST" "${MDNS_NAME:-}" "$_mdns_port"
-  mdns::start &
+  _mdns_port="$([ "$TLS" != "" ] && printf "%s" "${ADVANCED_PORT_HTTPS:-443}" || printf "%s" "${ADVANCED_PORT_HTTP:-80}")"
+  [ ! "${MDNS_STATION:-}" ] || mdns::records::add "_workstation._tcp" "$MDNS_HOST" "${MDNS_NAME:-}" "$_mdns_port"
+  mdns::records::add "${MDNS_TYPE:-_http._tcp}" "$MDNS_HOST" "${MDNS_NAME:-}" "$_mdns_port"
+  mdns::records::broadcast &
 }
 
 # Start ghost
@@ -115,12 +113,12 @@ com=(buildkitd \
 
 
 # unix:///datarun/buildkit/buildkitd.sock
-[ "${NOU:-}" ] \
+[ "${DUBO_EXPERIMENTAL:-}" ] \
   && com+=(--addr unix:///data/buildkitd.sock) \
-  || com+=(--addr tcp://0.0.0.0:"$PORT_HTTPS")
+  || com+=(--addr tcp://0.0.0.0:"${ADVANCED_PORT_HTTPS:-443}")
 
 
-if [ "${TLS:-}" ] && [ ! "${NOU:-}" ]; then
+if [ "${TLS:-}" ] && [ ! "${DUBO_EXPERIMENTAL:-}" ]; then
   com+=(--tlscert /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".crt \
     --tlskey /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key \
     --tlscacert /certs/pki/authorities/local/root.crt)
