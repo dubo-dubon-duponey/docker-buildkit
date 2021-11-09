@@ -94,7 +94,7 @@ QEMU_BINARY_PATH=/boot/bin/ binfmt --install all
 # PORT="${PORT:-}"
 
 # mDNS blast if asked to
-[ ! "${MDNS_HOST:-}" ] || {
+[ "${MDNS_ENABLED:-}" != true ] || {
   _mdns_port="$([ "$TLS" != "" ] && printf "%s" "${ADVANCED_PORT_HTTPS:-443}" || printf "%s" "${ADVANCED_PORT_HTTP:-80}")"
   [ ! "${MDNS_STATION:-}" ] || mdns::records::add "_workstation._tcp" "$MDNS_HOST" "${MDNS_NAME:-}" "$_mdns_port"
   mdns::records::add "${MDNS_TYPE:-_http._tcp}" "$MDNS_HOST" "${MDNS_NAME:-}" "$_mdns_port"
