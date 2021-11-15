@@ -181,7 +181,7 @@ ENV           CGO_ENABLED=1
 RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
-              [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
+              [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || { go mod download; cd ./cmd; go mod download; }
 
 ###################################################################
 # binfmt
@@ -341,6 +341,9 @@ ENV           GOARCH=$TARGETARCH
 
 ENV           CGO_CFLAGS="${CFLAGS:-} ${ENABLE_PIE:+-fPIE}"
 ENV           GOFLAGS="-trimpath ${ENABLE_PIE:+-buildmode=pie} ${GOFLAGS:-}"
+
+WORKDIR       ./cmd
+ENV           WITH_BUILD_SOURCE=./containerd-stargz-grpc
 
 RUN           export GOARM="$(printf "%s" "$TARGETVARIANT" | tr -d v)"; \
               [ "${CGO_ENABLED:-}" != 1 ] || { \
