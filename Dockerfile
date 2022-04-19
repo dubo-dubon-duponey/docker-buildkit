@@ -1,13 +1,13 @@
 ARG           FROM_REGISTRY=ghcr.io/dubo-dubon-duponey
 
-ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2021-11-01@sha256:23e78693390afaf959f940de6d5f9e75554979d84238503448188a7f30f34a7d
-ARG           FROM_IMAGE_AUDITOR=base:auditor-bullseye-2021-11-01@sha256:965d2e581c2b824bc03853d7b736c6b8e556e519af2cceb30c39c77ee0178404
-ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2021-11-01@sha256:c29f582f211999ba573b8010cdf623e695cc0570d2de6c980434269357a3f8ef
-ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2021-11-01@sha256:8ee6c2243bacfb2ec1a0010a9b1bf41209330ae940c6f88fee9c9e99f9cb705d
+ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2022-04-01@sha256:d73bb6ea84152c42e314bc9bff6388d0df6d01e277bd238ee0e6f8ade721856d
+ARG           FROM_IMAGE_AUDITOR=base:auditor-bullseye-2022-04-01@sha256:ca513bf0219f654afeb2d24aae233fef99cbcb01991aea64060f3414ac792b3f
+ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2022-04-01@sha256:6456b76dd2eedf34b4c5c997f9ad92901220dfdd405ec63419d0b54b6d85a777
+ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2022-04-01@sha256:323f3e36da17d8638a07a656e2f17d5ee4dc2b17dfea7e2da36e1b2174cc5f18
 
 FROM          $FROM_REGISTRY/$FROM_IMAGE_TOOLS                                                                          AS builder-tools
 # XXX grrr
-FROM          $FROM_REGISTRY/tools:linux-dev-latest                                                                     AS builder-tools-dev
+FROM          $FROM_REGISTRY/tools:linux-dev-bullseye-2022-04-01@sha256:797c0b89278cc4eaf55c34307dc8460cc595143b9033c263d82f49a5e6d43cfa                                                                     AS builder-tools-dev
 
 #######################
 # Fetchers
@@ -15,10 +15,10 @@ FROM          $FROM_REGISTRY/tools:linux-dev-latest                             
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-qemu
 
 ARG           GIT_REPO=github.com/qemu/qemu
-ARG           GIT_VERSION=v6.1.0
-ARG           GIT_COMMIT=f9baca549e44791be0dd98de15add3d8452a8af0
+ARG           GIT_VERSION=v6.2.0
+ARG           GIT_COMMIT=44f28df24767cf9dca1ddc9b23157737c4cbb645
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 
 # hadolint ignore=DL3009
 RUN           --mount=type=secret,uid=100,id=CA \
@@ -35,7 +35,7 @@ RUN           --mount=type=secret,uid=100,id=CA \
                   libglib2.0-dev:"$architecture"=2.66.8-1 \
                   libaio-dev:"$architecture"=0.3.112-9 \
                   libcap-ng-dev:"$architecture"=0.7.9-2.2+b1 \
-                  libseccomp-dev:"$architecture"=2.5.1-1 \
+                  libseccomp-dev:"$architecture"=2.5.1-1+deb11u1 \
                   zlib1g-dev:"$architecture"=1:1.2.11.dfsg-2; \
               done
 
@@ -49,7 +49,7 @@ ENV           WITH_BUILD_SOURCE="./cmd/binfmt"
 ENV           WITH_BUILD_OUTPUT="binfmt"
 ENV           WITH_LDFLAGS="-X main.revision=${GIT_COMMIT} -X main.qemuVersion=${GIT_VERSION}"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
@@ -57,8 +57,8 @@ RUN           --mount=type=secret,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-runc
 
 ARG           GIT_REPO=github.com/opencontainers/runc
-ARG           GIT_VERSION=v1.0.2
-ARG           GIT_COMMIT=52b36a2dd837e8462de8e01458bf02cf9eea47dd
+ARG           GIT_VERSION=v1.1.1
+ARG           GIT_COMMIT=52de29d7e0f8c0899bd7efb8810dd07f0073fa87
 
 ENV           WITH_BUILD_SOURCE="./"
 ENV           WITH_BUILD_OUTPUT="runc"
@@ -69,7 +69,7 @@ ENV           ENABLE_STATIC=true
 ENV           CGO_ENABLED=1
 ENV           GOFLAGS="-mod=vendor"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
@@ -85,14 +85,14 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
               for architecture in armel armhf arm64 ppc64el i386 s390x amd64; do \
-                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.1-1; \
+                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.1-1+deb11u1; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-buildkit
 
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=v0.9.2
-ARG           GIT_COMMIT=a14b4e097ae1dc7514c5febd6d75f742a166ea75
+ARG           GIT_VERSION=v0.10.1
+ARG           GIT_COMMIT=5bc9c7b15891eecab8d1e0c34ed62a0177c45ae7
 
 ENV           WITH_BUILD_SOURCE="./cmd/buildkitd"
 ENV           WITH_BUILD_OUTPUT="buildkitd"
@@ -104,7 +104,7 @@ ENV           ENABLE_STATIC=true
 ENV           CGO_ENABLED=1
 ENV           GOFLAGS="-mod=vendor"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
@@ -120,19 +120,19 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
               for architecture in armel armhf arm64 ppc64el i386 s390x amd64; do \
-                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.1-1; \
+                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.1-1+deb11u1; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-rootless
 
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-ARG           GIT_VERSION=v0.14.5
-ARG           GIT_COMMIT=1216988f0e4f48a70ce849a8f690352aaeae8c13
+ARG           GIT_VERSION=v1.0.0
+ARG           GIT_COMMIT=1920341cd41e047834a21007424162a2dc946315
 
 ENV           WITH_BUILD_SOURCE="./cmd/rootlesskit"
 ENV           WITH_BUILD_OUTPUT="rootlesskit"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
@@ -143,7 +143,7 @@ ARG           GIT_REPO=github.com/shadow-maint/shadow
 ARG           GIT_VERSION=v4.8.1
 ARG           GIT_COMMIT=2cc7da6058152ec0cd338d4e15d29bd7124ae3d7
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 
 # hadolint ignore=DL3009
 RUN           --mount=type=secret,uid=100,id=CA \
@@ -169,8 +169,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-stargz
 
 ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
-ARG           GIT_VERSION=v0.10.0
-ARG           GIT_COMMIT=6b6d495ee14ecb09ea671182e943a3710495b20f
+ARG           GIT_VERSION=v0.11.3
+ARG           GIT_COMMIT=84c8e540467f8701fbf1ba7fb9fce749fdbaf160
 
 ENV           WITH_BUILD_SOURCE="./cmd/containerd-stargz-grpc"
 ENV           WITH_BUILD_OUTPUT="containerd-stargz-grpc"
@@ -178,7 +178,7 @@ ENV           WITH_BUILD_OUTPUT="containerd-stargz-grpc"
 ENV           ENABLE_STATIC=true
 ENV           CGO_ENABLED=1
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || { go mod download; cd ./cmd; go mod download; }
@@ -449,7 +449,7 @@ ENV           WITH_BUILD_SOURCE="."
 ENV           WITH_BUILD_OUTPUT="ghostunnel"
 ENV           WITH_LDFLAGS="-X main.version=${GIT_VERSION}"
 
-RUN           git clone --recurse-submodules git://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || go mod download
