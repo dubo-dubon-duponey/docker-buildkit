@@ -1,13 +1,13 @@
 ARG           FROM_REGISTRY=ghcr.io/dubo-dubon-duponey
 
-ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2022-04-01@sha256:d73bb6ea84152c42e314bc9bff6388d0df6d01e277bd238ee0e6f8ade721856d
-ARG           FROM_IMAGE_AUDITOR=base:auditor-bullseye-2022-04-01@sha256:ca513bf0219f654afeb2d24aae233fef99cbcb01991aea64060f3414ac792b3f
-ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2022-04-01@sha256:6456b76dd2eedf34b4c5c997f9ad92901220dfdd405ec63419d0b54b6d85a777
-ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2022-04-01@sha256:323f3e36da17d8638a07a656e2f17d5ee4dc2b17dfea7e2da36e1b2174cc5f18
+ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2022-05-01@sha256:b97738238e9d1423b6de8d5a96f4310ae7039ffa4af19cd6a85f5f70d0faef99
+ARG           FROM_IMAGE_AUDITOR=base:auditor-bullseye-2022-05-01@sha256:984cf8672b483ca94333b5b37e19a95b115047dee05955767ed5b1bac1140e0c
+ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2022-05-01@sha256:5e44963d961cf7594cf8a0d1bba98fd5da69d7881cb77c142a43ceab230e87df
+ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2022-05-01@sha256:6268013e3bd16eaaf7dd15c7689f8740bd00af1149c92795cc42fab4f3c6d07a
 
 FROM          $FROM_REGISTRY/$FROM_IMAGE_TOOLS                                                                          AS builder-tools
 # XXX grrr
-FROM          $FROM_REGISTRY/tools:linux-dev-bullseye-2022-04-01@sha256:797c0b89278cc4eaf55c34307dc8460cc595143b9033c263d82f49a5e6d43cfa                                                                     AS builder-tools-dev
+FROM          $FROM_REGISTRY/tools:linux-dev-bullseye-2022-05-01@sha256:a3f1f844d7acab11a9b822ec9b0cbb07816b8f6fd10c7632791d2038ed1a4d8b                                                                     AS builder-tools-dev
 
 #######################
 # Fetchers
@@ -57,8 +57,8 @@ RUN           --mount=type=secret,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-runc
 
 ARG           GIT_REPO=github.com/opencontainers/runc
-ARG           GIT_VERSION=v1.1.1
-ARG           GIT_COMMIT=52de29d7e0f8c0899bd7efb8810dd07f0073fa87
+ARG           GIT_VERSION=v1.1.2
+ARG           GIT_COMMIT=a916309fff0f838eb94e928713dbc3c0d0ac7aa4
 
 ENV           WITH_BUILD_SOURCE="./"
 ENV           WITH_BUILD_OUTPUT="runc"
@@ -91,8 +91,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-buildkit
 
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=v0.10.1
-ARG           GIT_COMMIT=5bc9c7b15891eecab8d1e0c34ed62a0177c45ae7
+ARG           GIT_VERSION=v0.10.3
+ARG           GIT_COMMIT=c8d25d9a103b70dc300a4fd55e7e576472284e31
 
 ENV           WITH_BUILD_SOURCE="./cmd/buildkitd"
 ENV           WITH_BUILD_OUTPUT="buildkitd"
@@ -126,8 +126,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-rootless
 
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-ARG           GIT_VERSION=v1.0.0
-ARG           GIT_COMMIT=1920341cd41e047834a21007424162a2dc946315
+ARG           GIT_VERSION=v1.0.1
+ARG           GIT_COMMIT=5d5f4c0c26e26a6b51d1838c23e793e5836442d0
 
 ENV           WITH_BUILD_SOURCE="./cmd/rootlesskit"
 ENV           WITH_BUILD_OUTPUT="rootlesskit"
@@ -169,8 +169,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-stargz
 
 ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
-ARG           GIT_VERSION=v0.11.3
-ARG           GIT_COMMIT=84c8e540467f8701fbf1ba7fb9fce749fdbaf160
+ARG           GIT_VERSION=v0.11.4
+ARG           GIT_COMMIT=cf1c6d90461f1ae6f01a5b8f5e1dfc816223ad09
 
 ENV           WITH_BUILD_SOURCE="./cmd/containerd-stargz-grpc"
 ENV           WITH_BUILD_OUTPUT="containerd-stargz-grpc"
