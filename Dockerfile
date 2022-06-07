@@ -36,7 +36,7 @@ RUN           --mount=type=secret,uid=100,id=CA \
                   libaio-dev:"$architecture"=0.3.112-9 \
                   libcap-ng-dev:"$architecture"=0.7.9-2.2+b1 \
                   libseccomp-dev:"$architecture"=2.5.1-1+deb11u1 \
-                  zlib1g-dev:"$architecture"=1:1.2.11.dfsg-2; \
+                  zlib1g-dev:"$architecture"=1:1.2.11.dfsg-2+deb11u1; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-binfmt
