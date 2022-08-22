@@ -37,7 +37,7 @@ docker run -d --rm \
     --volume $(pwd)/data:/data \
     --name bk \
     --security-opt seccomp=unconfined --security-opt apparmor=unconfined \
-    ghcr.io/dubo-dubon-duponey/buildkit
+    index.docker.io/dubodubonduponey/buildkit
 ```
 
 ## Moar?

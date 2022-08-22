@@ -1,9 +1,9 @@
-ARG           FROM_REGISTRY=ghcr.io/dubo-dubon-duponey
+ARG           FROM_REGISTRY=index.docker.io/dubodubonduponey
 
-ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2022-05-01@sha256:b97738238e9d1423b6de8d5a96f4310ae7039ffa4af19cd6a85f5f70d0faef99
-ARG           FROM_IMAGE_AUDITOR=base:auditor-bullseye-2022-05-01@sha256:984cf8672b483ca94333b5b37e19a95b115047dee05955767ed5b1bac1140e0c
-ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2022-05-01@sha256:5e44963d961cf7594cf8a0d1bba98fd5da69d7881cb77c142a43ceab230e87df
-ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2022-05-01@sha256:6268013e3bd16eaaf7dd15c7689f8740bd00af1149c92795cc42fab4f3c6d07a
+ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2022-08-01
+ARG           FROM_IMAGE_AUDITOR=base:auditor-bullseye-2022-08-01
+ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2022-08-01
+ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2022-08-01
 
 FROM          $FROM_REGISTRY/$FROM_IMAGE_TOOLS                                                                          AS builder-tools
 # XXX grrr
@@ -57,8 +57,8 @@ RUN           --mount=type=secret,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-runc
 
 ARG           GIT_REPO=github.com/opencontainers/runc
-ARG           GIT_VERSION=v1.1.2
-ARG           GIT_COMMIT=a916309fff0f838eb94e928713dbc3c0d0ac7aa4
+ARG           GIT_VERSION=v1.1.3
+ARG           GIT_COMMIT=6724737f999df9ee0d8ca5c6d7b81f97adc34374
 
 ENV           WITH_BUILD_SOURCE="./"
 ENV           WITH_BUILD_OUTPUT="runc"
@@ -169,8 +169,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-stargz
 
 ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
-ARG           GIT_VERSION=v0.11.4
-ARG           GIT_COMMIT=cf1c6d90461f1ae6f01a5b8f5e1dfc816223ad09
+ARG           GIT_VERSION=v0.12.0
+ARG           GIT_COMMIT=461aaf7075bd3f771d6a379eff2db071dd54d222
 
 ENV           WITH_BUILD_SOURCE="./cmd/containerd-stargz-grpc"
 ENV           WITH_BUILD_OUTPUT="containerd-stargz-grpc"
@@ -442,8 +442,8 @@ RUN           make install
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-ghost
 
 ARG           GIT_REPO=github.com/ghostunnel/ghostunnel
-ARG           GIT_VERSION=v1.6.0
-ARG           GIT_COMMIT=5a237d19fc2cb7db4fa82b10b207ef2efd909cb5
+ARG           GIT_VERSION=v1.6.1
+ARG           GIT_COMMIT=374acefca8436e954208425b48d919a12afd67bf
 
 ENV           WITH_BUILD_SOURCE="."
 ENV           WITH_BUILD_OUTPUT="ghostunnel"
@@ -555,7 +555,7 @@ RUN           --mount=type=secret,uid=100,id=CA \
               && apt-get install -qq --no-install-recommends \
                 git=1:2.30.2-1 \
                 pigz=2.6-1 \
-                xz-utils=5.2.5-2 \
+                xz-utils=5.2.5-2.1~deb11u1 \
                 jq=1.6-2.1 \
                 libnss-mdns=0.14.1-2 \
               && apt-get -qq autoremove       \
