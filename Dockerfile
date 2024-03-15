@@ -163,12 +163,12 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
-              apt-get --no-install-recommends install -qq \
-                autopoint=0.21-4 \
-                gettext=0.21-4 \
-                libcap2-bin=1:2.44-1 \
-                byacc=20140715-1+b1 \
-                xsltproc=1.1.34-4+deb11u1; \
+              apt-get install -qq --no-install-recommends \
+                autopoint=0.21-12 \
+                gettext=0.21-12 \
+                libcap2-bin=1:2.66-4 \
+                byacc=1:2.0.20221106-1 \
+                xsltproc=1.1.35-1; \
               for architecture in arm64 amd64; do \
                 apt-get install -qq --no-install-recommends \
                   libcap-dev:"$architecture"=1:2.66-4 \
