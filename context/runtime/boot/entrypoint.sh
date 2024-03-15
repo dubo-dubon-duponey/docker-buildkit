@@ -51,9 +51,9 @@ com=(buildkitd \
     --oci-worker-snapshotter native \
     --config /config/buildkitd/main.toml)
 
-[ "$(printf "%s" "$LOG_LEVEL" | tr '[:upper:]' '[:lower:]')" != "debug" ] || args+=(--debug)
+[ "$LOG_LEVEL" != "debug" ] || args+=(--debug)
 
-[ "${MOD_PROMETHEUS_ENABLED:-}" != true ] || args+=(--debugaddr "${MOD_PROMETHEUS_BIND:-:4242}")
+[ "${MOD_METRICS_ENABLED:-}" != true ] || args+=(--debugaddr "${MOD_METRICS_BIND:-:4242}")
 
 [ "${DUBO_EXPERIMENTAL:-}" ] \
   && com+=(--addr unix:///data/buildkitd.sock) \

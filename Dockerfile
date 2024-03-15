@@ -21,8 +21,8 @@ ARG           GIT_REPO=github.com/qemu/qemu
 #ARG           GIT_COMMIT=44f28df24767cf9dca1ddc9b23157737c4cbb645
 #ARG           GIT_VERSION=v7.2.0
 #ARG           GIT_COMMIT=b67b00e6b4c7831a3f5bc684bc0df7a9bfd1bd56
-ARG           GIT_VERSION=v8.2.1
-ARG           GIT_COMMIT=f48c205fb42be48e2e47b7e1cd9a2802e5ca17b0
+ARG           GIT_VERSION=v8.2.2
+ARG           GIT_COMMIT=11aa0b1ff115b86160c4d37e7c37e6a6b13b77ea
 
 
 RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
@@ -100,8 +100,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-buildkit
 
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=v0.12.5
-ARG           GIT_COMMIT=bac3f2b673f3f9d33e79046008e7a38e856b3dc6
+ARG           GIT_VERSION=v0.13.0
+ARG           GIT_COMMIT=2afc050d57d17983f3f662d5424c2725a35c60f4
 
 ENV           WITH_BUILD_SOURCE="./cmd/buildkitd"
 ENV           WITH_BUILD_OUTPUT="buildkitd"
@@ -135,8 +135,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-rootless
 
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-ARG           GIT_VERSION=v2.0.1
-ARG           GIT_COMMIT=5e9cd7880619a3c0a675e6a41d9562b6839066ee
+ARG           GIT_VERSION=v2.0.2
+ARG           GIT_COMMIT=9e7dd3380db22481df6c9570a04ba4f3c10315ed
 
 ENV           WITH_BUILD_SOURCE="./cmd/rootlesskit"
 ENV           WITH_BUILD_OUTPUT="rootlesskit"
@@ -641,8 +641,8 @@ ENV           AUTH_PASSWORD="cmVwbGFjZV9tZV93aXRoX3NvbWV0aGluZwo="
 ENV           LOG_LEVEL="warn"
 
 ### Metrics and tracing
-ENV           MOD_PROMETHEUS_ENABLED=false
-ENV           MOD_PROMETHEUS_BIND=":4242"
+ENV           MOD_METRICS_ENABLED=false
+ENV           MOD_METRICS_BIND=":4242"
 
 ### mDNS broadcasting
 # Whether to enable MDNS broadcasting or not
