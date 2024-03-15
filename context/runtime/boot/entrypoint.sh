@@ -7,6 +7,8 @@ readonly root
 . "$root/helpers.sh"
 # shellcheck source=/dev/null
 . "$root/mdns.sh"
+# shellcheck source=/dev/null
+. "$root/tls.sh"
 
 helpers::dir::writable /certs
 helpers::dir::writable /tmp
