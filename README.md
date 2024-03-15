@@ -1,33 +1,30 @@
 # What
 
-Docker image for "BuildKit".
+A Docker image to run a BuildKit server.
 
 This is based on [BuildKit](https://github.com/moby/buildkit) with bits and pieces from https://github.com/docker/binfmt
 
-Experimental. This is mostly of interest for people who want to roll their own multi-arch enabled buildkit nodes, as an example.
+Experimental.
+
+This is mostly of interest for people who want to roll their own multi-arch enabled buildkit nodes, as an example.
 
 ## Image features
 
 * multi-architecture:
   * [x] linux/amd64
-  * [x] linux/386
   * [x] linux/arm64
-  * [x] linux/arm/v7
-  * [x] linux/arm/v6
-  * [x] linux/ppc64le
-  * [x] linux/s390x
 * hardened:
   * [x] image runs read-only
   * [ ] image runs with no capabilities, although apparmor and seccomp have to be disabled
   * [ ] process runs as a non-root user, disabled login, no shell
 * lightweight
-  * [x] based on our slim [Debian Bullseye](https://github.com/dubo-dubon-duponey/docker-debian)
+  * [x] based on our slim [Debian Bookworm](https://github.com/dubo-dubon-duponey/docker-debian)
   * [x] simple entrypoint script
-  * [ ] multi-stage build ~~with no installed dependencies~~ with git installed for the runtime image
+  * [ ] multi-stage build with ~~zero packages~~ `git`, `pigz`, `xz-utils`, `jq`, `libnss-mdns` installed in the runtime image
 * observable
   * [x] healthcheck
   * [x] log to stdout
-  * [ ] ~~prometheus endpoint~~ (TODO)
+  * [x] prometheus endpoint
 
 ## Run
 
@@ -37,8 +34,17 @@ docker run -d --rm \
     --volume $(pwd)/data:/data \
     --name bk \
     --security-opt seccomp=unconfined --security-opt apparmor=unconfined \
-    index.docker.io/dubodubonduponey/buildkit
+    docker.io/dubodubonduponey/buildkit
 ```
+
+## Notes
+
+We are bundling in avahi to provide mDNS *resolution* for buildkit, if configured.
+Specifically useful to allow access for local services (registry, apt-cache) which advertise
+their ip over mDNS.
+
+Configuration is mostly experimental right now and undocumented.
+You have to look at the bottom of the Dockerfile, and the entrypoint script.
 
 ## Moar?
 
