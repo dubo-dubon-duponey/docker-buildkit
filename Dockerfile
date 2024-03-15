@@ -1,13 +1,13 @@
-ARG           FROM_REGISTRY=index.docker.io/dubodubonduponey
+ARG           FROM_REGISTRY=docker.io/dubodubonduponey
 
-ARG           FROM_IMAGE_BUILDER=base:builder-bullseye-2022-08-01
-ARG           FROM_IMAGE_AUDITOR=base:auditor-bullseye-2022-08-01
-ARG           FROM_IMAGE_RUNTIME=base:runtime-bullseye-2022-08-01
-ARG           FROM_IMAGE_TOOLS=tools:linux-bullseye-2022-08-01
+ARG           FROM_IMAGE_BUILDER=base:builder-bookworm-2024-02-20
+ARG           FROM_IMAGE_AUDITOR=base:auditor-bookworm-2024-02-20
+ARG           FROM_IMAGE_RUNTIME=base:runtime-bookworm-2024-02-20
+ARG           FROM_IMAGE_TOOLS=tools:linux-bookworm-2024-02-20
 
 FROM          $FROM_REGISTRY/$FROM_IMAGE_TOOLS                                                                          AS builder-tools
 # XXX grrr
-FROM          $FROM_REGISTRY/tools:linux-dev-bullseye-2022-05-01@sha256:a3f1f844d7acab11a9b822ec9b0cbb07816b8f6fd10c7632791d2038ed1a4d8b                                                                     AS builder-tools-dev
+FROM          $FROM_REGISTRY/tools:linux-dev-bookworm-2024-02-20                                                        AS builder-tools-dev
 
 #######################
 # Fetchers
@@ -15,8 +15,15 @@ FROM          $FROM_REGISTRY/tools:linux-dev-bullseye-2022-05-01@sha256:a3f1f844
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-qemu
 
 ARG           GIT_REPO=github.com/qemu/qemu
-ARG           GIT_VERSION=v6.2.0
-ARG           GIT_COMMIT=44f28df24767cf9dca1ddc9b23157737c4cbb645
+
+# Trying to up now - last attempt everything failed
+#ARG           GIT_VERSION=v6.2.0
+#ARG           GIT_COMMIT=44f28df24767cf9dca1ddc9b23157737c4cbb645
+#ARG           GIT_VERSION=v7.2.0
+#ARG           GIT_COMMIT=b67b00e6b4c7831a3f5bc684bc0df7a9bfd1bd56
+ARG           GIT_VERSION=v8.2.1
+ARG           GIT_COMMIT=f48c205fb42be48e2e47b7e1cd9a2802e5ca17b0
+
 
 RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 
@@ -29,21 +36,23 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
-              apt-get install -qq --no-install-recommends ninja-build=1.10.1-1; \
-              for architecture in armel armhf arm64 ppc64el i386 s390x amd64; do \
+              apt-get install -qq --no-install-recommends ninja-build=1.11.1-1; \
+              for architecture in arm64 amd64; do \
                 apt-get install -qq --no-install-recommends \
-                  libglib2.0-dev:"$architecture"=2.66.8-1 \
-                  libaio-dev:"$architecture"=0.3.112-9 \
-                  libcap-ng-dev:"$architecture"=0.7.9-2.2+b1 \
-                  libseccomp-dev:"$architecture"=2.5.1-1+deb11u1 \
-                  zlib1g-dev:"$architecture"=1:1.2.11.dfsg-2+deb11u1; \
+                  libglib2.0-dev:"$architecture"=2.74.6-2 \
+                  libaio-dev:"$architecture"=0.3.113-4 \
+                  libcap-ng-dev:"$architecture"=0.8.3-1+b3 \
+                  libseccomp-dev:"$architecture"=2.5.4-1+b3 \
+                  zlib1g-dev:"$architecture"=1:1.2.13.dfsg-1; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-binfmt
 
 ARG           GIT_REPO=github.com/tonistiigi/binfmt
-ARG           GIT_VERSION=0a2d7e3
-ARG           GIT_COMMIT=0a2d7e397705782ab543b3c9a650d4bf8c70902a
+#ARG           GIT_VERSION=4a4b43d
+#ARG           GIT_COMMIT=4a4b43d34598020d4fbcb3531bf72b10b9adb0e9
+ARG           GIT_VERSION=ba27ffd
+ARG           GIT_COMMIT=ba27ffdc9d31617fcd350120a89d7ca67c1108c6
 
 ENV           WITH_BUILD_SOURCE="./cmd/binfmt"
 ENV           WITH_BUILD_OUTPUT="binfmt"
@@ -57,8 +66,8 @@ RUN           --mount=type=secret,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-runc
 
 ARG           GIT_REPO=github.com/opencontainers/runc
-ARG           GIT_VERSION=v1.1.3
-ARG           GIT_COMMIT=6724737f999df9ee0d8ca5c6d7b81f97adc34374
+ARG           GIT_VERSION=v1.1.12
+ARG           GIT_COMMIT=51d5e94601ceffbbd85688df1c928ecccbfa4685
 
 ENV           WITH_BUILD_SOURCE="./"
 ENV           WITH_BUILD_OUTPUT="runc"
@@ -84,15 +93,15 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
-              for architecture in armel armhf arm64 ppc64el i386 s390x amd64; do \
-                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.1-1+deb11u1; \
+              for architecture in arm64 amd64; do \
+                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.4-1+b3; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-buildkit
 
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=v0.10.3
-ARG           GIT_COMMIT=c8d25d9a103b70dc300a4fd55e7e576472284e31
+ARG           GIT_VERSION=v0.12.5
+ARG           GIT_COMMIT=bac3f2b673f3f9d33e79046008e7a38e856b3dc6
 
 ENV           WITH_BUILD_SOURCE="./cmd/buildkitd"
 ENV           WITH_BUILD_OUTPUT="buildkitd"
@@ -119,15 +128,15 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
-              for architecture in armel armhf arm64 ppc64el i386 s390x amd64; do \
-                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.1-1+deb11u1; \
+              for architecture in arm64 amd64; do \
+                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.4-1+b3; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-rootless
 
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-ARG           GIT_VERSION=v1.0.1
-ARG           GIT_COMMIT=5d5f4c0c26e26a6b51d1838c23e793e5836442d0
+ARG           GIT_VERSION=v2.0.1
+ARG           GIT_COMMIT=5e9cd7880619a3c0a675e6a41d9562b6839066ee
 
 ENV           WITH_BUILD_SOURCE="./cmd/rootlesskit"
 ENV           WITH_BUILD_OUTPUT="rootlesskit"
@@ -159,18 +168,18 @@ RUN           --mount=type=secret,uid=100,id=CA \
                 gettext=0.21-4 \
                 libcap2-bin=1:2.44-1 \
                 byacc=20140715-1+b1 \
-                xsltproc=1.1.34-4; \
-              for architecture in armel armhf arm64 ppc64el i386 s390x amd64; do \
+                xsltproc=1.1.34-4+deb11u1; \
+              for architecture in arm64 amd64; do \
                 apt-get install -qq --no-install-recommends \
-                  libcap-dev:"$architecture"=1:2.44-1 \
-                  libcrypt-dev:"$architecture"=1:4.4.18-4; \
+                  libcap-dev:"$architecture"=1:2.66-4 \
+                  libcrypt-dev:"$architecture"=1:4.4.33-2; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-stargz
 
 ARG           GIT_REPO=github.com/containerd/stargz-snapshotter
-ARG           GIT_VERSION=v0.12.0
-ARG           GIT_COMMIT=461aaf7075bd3f771d6a379eff2db071dd54d222
+ARG           GIT_VERSION=v0.15.1
+ARG           GIT_COMMIT=64ab83bd65cd4a763e262955984232cc5ddfeb3f
 
 ENV           WITH_BUILD_SOURCE="./cmd/containerd-stargz-grpc"
 ENV           WITH_BUILD_OUTPUT="containerd-stargz-grpc"
@@ -179,6 +188,7 @@ ENV           ENABLE_STATIC=true
 ENV           CGO_ENABLED=1
 
 RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
+# hadolint ignore=DL3003,SC2164
 RUN           --mount=type=secret,id=CA \
               --mount=type=secret,id=NETRC \
               [[ "${GOFLAGS:-}" == *-mod=vendor* ]] || { go mod download; cd ./cmd; go mod download; }
@@ -342,6 +352,7 @@ ENV           GOARCH=$TARGETARCH
 ENV           CGO_CFLAGS="${CFLAGS:-} ${ENABLE_PIE:+-fPIE}"
 ENV           GOFLAGS="-trimpath ${ENABLE_PIE:+-buildmode=pie} ${GOFLAGS:-}"
 
+# hadolint ignore=DL3000
 WORKDIR       ./cmd
 ENV           WITH_BUILD_SOURCE=./containerd-stargz-grpc
 
@@ -442,8 +453,8 @@ RUN           make install
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-ghost
 
 ARG           GIT_REPO=github.com/ghostunnel/ghostunnel
-ARG           GIT_VERSION=v1.6.1
-ARG           GIT_COMMIT=374acefca8436e954208425b48d919a12afd67bf
+ARG           GIT_VERSION=v1.7.3
+ARG           GIT_COMMIT=04b717c4d4a4cd5626acc47155b025d370dbfba5
 
 ENV           WITH_BUILD_SOURCE="."
 ENV           WITH_BUILD_OUTPUT="ghostunnel"
@@ -498,7 +509,7 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq && apt-get install -qq --no-install-recommends \
-                libnss-mdns=0.14.1-2 && \
+                libnss-mdns=0.15.1-3 && \
               apt-get -qq autoremove      && \
               apt-get -qq clean           && \
               rm -rf /var/lib/apt/lists/* && \
@@ -553,11 +564,11 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq \
               && apt-get install -qq --no-install-recommends \
-                git=1:2.30.2-1 \
+                git=1:2.39.2-1.1 \
                 pigz=2.6-1 \
-                xz-utils=5.2.5-2.1~deb11u1 \
+                xz-utils=5.4.1-0.2 \
                 jq=1.6-2.1 \
-                libnss-mdns=0.14.1-2 \
+                libnss-mdns=0.15.1-3 \
               && apt-get -qq autoremove       \
               && apt-get -qq clean            \
               && rm -rf /var/lib/apt/lists/*  \
@@ -576,8 +587,6 @@ RUN           chown root:root /boot/bin/newuidmap \
                 && chmod u+s /boot/bin/newgidmap
 
 USER          dubo-dubon-duponey
-
-ENV           MDNS_NSS_ENABLED=true
 
 
 # Prepare dbus
@@ -604,11 +613,9 @@ EXPOSE        80
 # By default, tls should be restricted to 1.3 - you may downgrade to 1.2+ for compatibility with older clients (webdav client on macos, older browsers)
 ENV           ADVANCED_TLS_MIN=1.3
 # Name advertised by Caddy in the server http header
-ENV           ADVANCED_SERVER_NAME="DuboDubonDuponey/1.0 (Caddy/2) [$_SERVICE_NICK]"
+ENV           ADVANCED_SERVER_NAME="DuboDubonDuponey/1.0 (Caddy/2)"
 # Root certificate to trust for mTLS - this is not used if MTLS is disabled
-ENV           ADVANCED_MTLS_TRUST="/certs/mtls_ca.crt"
-# Log verbosity for
-ENV           LOG_LEVEL="warn"
+ENV           ADVANCED_MTLS_TRUST="/certs/pki/authorities/local/root.crt"
 # Whether to start caddy at all or not
 ENV           PROXY_HTTPS_ENABLED=true
 # Domain name to serve
@@ -622,23 +629,36 @@ ENV           TLS="internal"
 ENV           TLS_AUTO=disable_redirects
 ENV           TLS_SERVER="https://acme-v02.api.letsencrypt.org/directory"
 # Either require_and_verify or verify_if_given, or "" to disable mTLS altogether
-ENV           MTLS="require_and_verify"
+ENV           MTLS_MODE="require_and_verify"
 # Realm for authentication - set to "" to disable authentication entirely
 ENV           AUTH="My Precious Realm"
 # Provide username and password here (call the container with the "hash" command to generate a properly encrypted password, otherwise, a random one will be generated)
 ENV           AUTH_USERNAME="dubo-dubon-duponey"
 ENV           AUTH_PASSWORD="cmVwbGFjZV9tZV93aXRoX3NvbWV0aGluZwo="
+
+### Logging
+# Log verbosity for
+ENV           LOG_LEVEL="warn"
+
+### Metrics and tracing
+ENV           MOD_PROMETHEUS_ENABLED=false
+ENV           MOD_PROMETHEUS_BIND=":4242"
+
 ### mDNS broadcasting
 # Whether to enable MDNS broadcasting or not
-ENV           MDNS_ENABLED=true
+ENV           MOD_MDNS_ENABLED=true
 # Type to advertise
-ENV           MDNS_TYPE="_$_SERVICE_TYPE._tcp"
+ENV           MOD_MDNS_TYPE="_$_SERVICE_TYPE._tcp"
 # Name is used as a short description for the service
-ENV           MDNS_NAME="$_SERVICE_NICK mDNS display name"
-# The service will be annonced and reachable at $MDNS_HOST.local (set to empty string to disable mDNS announces entirely)
-ENV           MDNS_HOST="$_SERVICE_NICK"
+ENV           MOD_MDNS_NAME="$_SERVICE_NICK mDNS display name"
+# The service will be annonced and reachable at $MOD_MDNS_HOST.local (set to empty string to disable mDNS announces entirely)
+ENV           MOD_MDNS_HOST="$_SERVICE_NICK"
 # Also announce the service as a workstation (for example for the benefit of coreDNS mDNS)
-ENV           MDNS_STATION=true
+ENV           ADVANCED_MOD_MDNS_STATION=true
+
+### mDNS resolution
+ENV           MOD_MDNS_NSS_ENABLED=true
+
 # Caddy certs will be stored here
 VOLUME        /certs
 # Caddy uses this
