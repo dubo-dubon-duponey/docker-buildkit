@@ -100,8 +100,8 @@ RUN           --mount=type=secret,uid=100,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-buildkit
 
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=v0.13.0
-ARG           GIT_COMMIT=2afc050d57d17983f3f662d5424c2725a35c60f4
+ARG           GIT_VERSION=v0.13.1
+ARG           GIT_COMMIT=2ae42e0c0c793d7d66b7a23424af6fd6c2f9c8f3
 
 ENV           WITH_BUILD_SOURCE="./cmd/buildkitd"
 ENV           WITH_BUILD_OUTPUT="buildkitd"
