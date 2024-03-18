@@ -15,6 +15,8 @@ helpers::dir::writable /tmp
 helpers::dir::writable "$XDG_DATA_HOME" create
 helpers::dir::writable "$XDG_DATA_DIRS" create
 helpers::dir::writable "$XDG_RUNTIME_DIR" create
+# /tmp/runtime
+helpers::dir::writable "$XDG_RUNTIME_DIR/avahi-daemon"
 
 # --disable-authentication
 # XXX switch to unix socks for buildkit
@@ -25,7 +27,7 @@ helpers::dir::writable "$XDG_RUNTIME_DIR" create
 # mDNS blast if asked to
 # XXX so no broadcast unless TLS?
 [ "${MOD_MDNS_ENABLED:-}" != true ] || [ "${MOD_TLS_ENABLED:-}" != true ] || {
-  _mdns_type="${MOD_MDNS_TYPE:-_buildkit._tcp}"
+  _mdns_type="${ADVANCED_MOD_MDNS_TYPE:-_buildkit._tcp}"
   _mdns_port="${MOD_TLS_PORT:-443}"
 
   [ "${ADVANCED_MOD_MDNS_STATION:-}" != true ] || mdns::records::add "_workstation._tcp" "${MOD_MDNS_HOST}" "${MOD_MDNS_NAME:-}" "$_mdns_port"
