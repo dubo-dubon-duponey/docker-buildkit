@@ -393,6 +393,7 @@ ENV           CXXFLAGS="-Werror=format-security -Wall $OPTIMIZATION_OPTIONS $DEB
 # XXXtemp
 
 # Disabling fuse and vnc is deviating from
+# Doesnt exist anymore?  --disable-blobs \
 RUN           eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" | sed -e "s/^armv6$/armel/" -e "s/^armv7$/armhf/" -e "s/^ppc64le$/ppc64el/" -e "s/^386$/i386/")")"; \
               export PKG_CONFIG="${DEB_TARGET_GNU_TYPE}-pkg-config"; \
               export AR="${DEB_TARGET_GNU_TYPE}-ar"; \
@@ -407,7 +408,6 @@ RUN           eval "$(dpkg-architecture -A "$(echo "$TARGETARCH$TARGETVARIANT" |
                 --enable-linux-user \
                 --disable-system \
                 --static \
-                --disable-blobs \
                 --disable-brlapi \
                 --disable-cap-ng \
                 --disable-capstone \
@@ -569,13 +569,15 @@ RUN           --mount=type=secret,uid=100,id=CA \
                 xz-utils=5.4.1-0.2 \
                 jq=1.6-2.1 \
                 libnss-mdns=0.15.1-3 \
+                avahi-daemon=0.8-10 \
               && apt-get -qq autoremove       \
               && apt-get -qq clean            \
               && rm -rf /var/lib/apt/lists/*  \
               && rm -rf /tmp/*                \
               && rm -rf /var/tmp/*
 
-RUN           ln -s "$XDG_STATE_HOME"/avahi-daemon /run
+# Deviate avahi temporary files into /tmp (there is a socket, so, probably need exec)
+RUN           mkdir -p "$XDG_RUNTIME_DIR"/avahi-daemon; ln -s "$XDG_RUNTIME_DIR"/avahi-daemon /run; chown avahi:avahi /run/avahi-daemon; chmod 777 /run/avahi-daemon
 
 RUN           echo dubo-dubon-duponey:100000:65536 | tee /etc/subuid | tee /etc/subgid
 
@@ -601,7 +603,7 @@ USER          dubo-dubon-duponey
 # since caddy only role is to provide and renew TLS certificates
 
 ENV           _SERVICE_NICK="buildkit"
-ENV           _SERVICE_TYPE="buildkit"
+ENV           _SERVICE_TYPE="_buildkit._tcp"
 
 ### Front server configuration
 ## Advanced settings that usually should not be changed
@@ -648,7 +650,7 @@ ENV           MOD_METRICS_BIND=":4242"
 # Whether to enable MDNS broadcasting or not
 ENV           MOD_MDNS_ENABLED=true
 # Type to advertise
-ENV           MOD_MDNS_TYPE="_$_SERVICE_TYPE._tcp"
+ENV           ADVANCED_MOD_MDNS_TYPE="$_SERVICE_TYPE"
 # Name is used as a short description for the service
 ENV           MOD_MDNS_NAME="$_SERVICE_NICK mDNS display name"
 # The service will be annonced and reachable at $MOD_MDNS_HOST.local (set to empty string to disable mDNS announces entirely)
