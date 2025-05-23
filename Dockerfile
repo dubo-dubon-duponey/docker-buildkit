@@ -1,13 +1,13 @@
 ARG           FROM_REGISTRY=docker.io/dubodubonduponey
 
-ARG           FROM_IMAGE_BUILDER=base:builder-bookworm-2024-03-01
-ARG           FROM_IMAGE_AUDITOR=base:auditor-bookworm-2024-03-01
-ARG           FROM_IMAGE_RUNTIME=base:runtime-bookworm-2024-03-01
-ARG           FROM_IMAGE_TOOLS=tools:linux-bookworm-2024-03-01
+ARG           FROM_IMAGE_BUILDER=base:builder-bookworm-2025-05-01
+ARG           FROM_IMAGE_AUDITOR=base:auditor-bookworm-2025-05-01
+ARG           FROM_IMAGE_RUNTIME=base:runtime-bookworm-2025-05-01
+ARG           FROM_IMAGE_TOOLS=tools:linux-bookworm-2025-05-01
 
 FROM          $FROM_REGISTRY/$FROM_IMAGE_TOOLS                                                                          AS builder-tools
 # XXX grrr
-FROM          $FROM_REGISTRY/tools:linux-dev-bookworm-2024-03-01                                                        AS builder-tools-dev
+FROM          $FROM_REGISTRY/tools:linux-dev-bookworm-2025-05-01                                                        AS builder-tools-dev
 
 #######################
 # Fetchers
@@ -21,9 +21,10 @@ ARG           GIT_REPO=github.com/qemu/qemu
 #ARG           GIT_COMMIT=44f28df24767cf9dca1ddc9b23157737c4cbb645
 #ARG           GIT_VERSION=v7.2.0
 #ARG           GIT_COMMIT=b67b00e6b4c7831a3f5bc684bc0df7a9bfd1bd56
-ARG           GIT_VERSION=v8.2.2
-ARG           GIT_COMMIT=11aa0b1ff115b86160c4d37e7c37e6a6b13b77ea
-
+#ARG           GIT_VERSION=v8.2.2
+#ARG           GIT_COMMIT=11aa0b1ff115b86160c4d37e7c37e6a6b13b77ea
+ARG           GIT_VERSION=v10.0.0
+ARG           GIT_COMMIT=7c949c53e936aa3a658d84ab53bae5cadaa5d59c
 
 RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 
@@ -36,13 +37,13 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
-              apt-get install -qq --no-install-recommends ninja-build=1.11.1-1; \
+              apt-get install -qq --no-install-recommends flex bison python3-venv ninja-build=1.11.1-2~deb12u1; \
               for architecture in arm64 amd64; do \
                 apt-get install -qq --no-install-recommends \
-                  libglib2.0-dev:"$architecture"=2.74.6-2 \
+                  libglib2.0-dev:"$architecture"=2.74.6-2+deb12u5 \
                   libaio-dev:"$architecture"=0.3.113-4 \
                   libcap-ng-dev:"$architecture"=0.8.3-1+b3 \
-                  libseccomp-dev:"$architecture"=2.5.4-1+b3 \
+                  libseccomp-dev:"$architecture"=2.5.4-1+deb12u1 \
                   zlib1g-dev:"$architecture"=1:1.2.13.dfsg-1; \
               done
 
@@ -66,8 +67,8 @@ RUN           --mount=type=secret,id=CA \
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-runc
 
 ARG           GIT_REPO=github.com/opencontainers/runc
-ARG           GIT_VERSION=v1.1.12
-ARG           GIT_COMMIT=51d5e94601ceffbbd85688df1c928ecccbfa4685
+ARG           GIT_VERSION=v1.3.0
+ARG           GIT_COMMIT=4ca628d1d4c974f92d24daccb901aa078aad748e
 
 ENV           WITH_BUILD_SOURCE="./"
 ENV           WITH_BUILD_OUTPUT="runc"
@@ -94,14 +95,16 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
               for architecture in arm64 amd64; do \
-                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.4-1+b3; \
+                apt-get install -qq --no-install-recommends \
+                  pkg-config:"$architecture"=1.8.1-1 \
+                  libseccomp-dev:"$architecture"=2.5.4-1+deb12u1; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-buildkit
 
 ARG           GIT_REPO=github.com/moby/buildkit
-ARG           GIT_VERSION=v0.13.1
-ARG           GIT_COMMIT=2ae42e0c0c793d7d66b7a23424af6fd6c2f9c8f3
+ARG           GIT_VERSION=v0.22.0
+ARG           GIT_COMMIT=13cf07c97baebd3d5603feecc03f5a46ac98d2a5
 
 ENV           WITH_BUILD_SOURCE="./cmd/buildkitd"
 ENV           WITH_BUILD_OUTPUT="buildkitd"
@@ -129,14 +132,14 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq; \
               for architecture in arm64 amd64; do \
-                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.4-1+b3; \
+                apt-get install -qq --no-install-recommends libseccomp-dev:"$architecture"=2.5.4-1+deb12u1; \
               done
 
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-rootless
 
 ARG           GIT_REPO=github.com/rootless-containers/rootlesskit
-ARG           GIT_VERSION=v2.0.2
-ARG           GIT_COMMIT=9e7dd3380db22481df6c9570a04ba4f3c10315ed
+ARG           GIT_VERSION=v2.3.5
+ARG           GIT_COMMIT=0cc0811acc6e4daee71817383e62fb811590bc13
 
 ENV           WITH_BUILD_SOURCE="./cmd/rootlesskit"
 ENV           WITH_BUILD_OUTPUT="rootlesskit"
@@ -168,7 +171,7 @@ RUN           --mount=type=secret,uid=100,id=CA \
                 gettext=0.21-12 \
                 libcap2-bin=1:2.66-4 \
                 byacc=1:2.0.20221106-1 \
-                xsltproc=1.1.35-1; \
+                xsltproc=1.1.35-1+deb12u1; \
               for architecture in arm64 amd64; do \
                 apt-get install -qq --no-install-recommends \
                   libcap-dev:"$architecture"=1:2.66-4 \
@@ -453,12 +456,14 @@ RUN           make install
 FROM          --platform=$BUILDPLATFORM $FROM_REGISTRY/$FROM_IMAGE_BUILDER                                              AS fetcher-ghost
 
 ARG           GIT_REPO=github.com/ghostunnel/ghostunnel
-ARG           GIT_VERSION=v1.7.3
-ARG           GIT_COMMIT=04b717c4d4a4cd5626acc47155b025d370dbfba5
+ARG           GIT_VERSION=v1.8.4
+ARG           GIT_COMMIT=cd77be58daf61fdc5935853fded7d85e61ab605f
 
 ENV           WITH_BUILD_SOURCE="."
 ENV           WITH_BUILD_OUTPUT="ghostunnel"
 ENV           WITH_LDFLAGS="-X main.version=${GIT_VERSION}"
+
+ENV           CGO_ENABLED=1
 
 RUN           git clone --recurse-submodules https://"$GIT_REPO" .; git checkout "$GIT_COMMIT"
 RUN           --mount=type=secret,id=CA \
@@ -509,6 +514,7 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_SOURCES \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq && apt-get install -qq --no-install-recommends \
+                avahi-daemon=0.8-10+deb12u1 \
                 libnss-mdns=0.15.1-3 && \
               apt-get -qq autoremove      && \
               apt-get -qq clean           && \
@@ -564,12 +570,12 @@ RUN           --mount=type=secret,uid=100,id=CA \
               --mount=type=secret,id=APT_CONFIG \
               apt-get update -qq \
               && apt-get install -qq --no-install-recommends \
-                git=1:2.39.2-1.1 \
+                git=1:2.39.5-0+deb12u2 \
                 pigz=2.6-1 \
-                xz-utils=5.4.1-0.2 \
+                xz-utils=5.4.1-1 \
                 jq=1.6-2.1 \
                 libnss-mdns=0.15.1-3 \
-                avahi-daemon=0.8-10 \
+                avahi-daemon=0.8-10+deb12u1 \
               && apt-get -qq autoremove       \
               && apt-get -qq clean            \
               && rm -rf /var/lib/apt/lists/*  \
@@ -577,7 +583,7 @@ RUN           --mount=type=secret,uid=100,id=CA \
               && rm -rf /var/tmp/*
 
 # Deviate avahi temporary files into /tmp (there is a socket, so, probably need exec)
-RUN           mkdir -p "$XDG_RUNTIME_DIR"/avahi-daemon; ln -s "$XDG_RUNTIME_DIR"/avahi-daemon /run; chown avahi:avahi /run/avahi-daemon; chmod 777 /run/avahi-daemon
+RUN           mkdir -p "$XDG_STATE_HOME"/avahi-daemon; ln -s "$XDG_STATE_HOME"/avahi-daemon /run; chown avahi:avahi /run/avahi-daemon; chmod 777 /run/avahi-daemon
 
 RUN           echo dubo-dubon-duponey:100000:65536 | tee /etc/subuid | tee /etc/subgid
 
@@ -594,10 +600,6 @@ USER          dubo-dubon-duponey
 # Prepare dbus
 #RUN           mkdir -p /run/dbus; chown "$BUILD_UID":root /run/dbus; chmod 775 /run/dbus
 # VOLUME        /run
-
-
-# XXX why?
-# ENV           XDG_RUNTIME_DIR=/data
 
 # Current config below is full-blown regular caddy config, which is only partly useful here
 # since caddy only role is to provide and renew TLS certificates
@@ -662,11 +664,7 @@ ENV           ADVANCED_MOD_MDNS_STATION=true
 ENV           MOD_MDNS_NSS_ENABLED=true
 
 # Caddy certs will be stored here
-VOLUME        /certs
-# Caddy uses this
-VOLUME        /tmp
-# Used by the backend service
-VOLUME        /data
+VOLUME        "$XDG_DATA_HOME"
 
 # XXX problematic as caddy is picking up on this - moving to ghost ASAP
 ENV           HEALTHCHECK_URL="http://127.0.0.1:$PORT"

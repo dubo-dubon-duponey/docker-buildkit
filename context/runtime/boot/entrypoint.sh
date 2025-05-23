@@ -10,13 +10,10 @@ readonly root
 # shellcheck source=/dev/null
 . "$root/tls.sh"
 
-helpers::dir::writable /certs
-helpers::dir::writable /tmp
 helpers::dir::writable "$XDG_DATA_HOME" create
-helpers::dir::writable "$XDG_DATA_DIRS" create
 helpers::dir::writable "$XDG_RUNTIME_DIR" create
 # /tmp/runtime
-helpers::dir::writable "$XDG_RUNTIME_DIR/avahi-daemon"
+helpers::dir::writable "$XDG_STATE_HOME/avahi-daemon"
 
 # --disable-authentication
 # XXX switch to unix socks for buildkit
@@ -47,39 +44,39 @@ done
 QEMU_BINARY_PATH=/boot/bin/ binfmt --install all
 
 com=(buildkitd \
-    --root /data/buildkit \
+    --root "$XDG_DATA_HOME"/buildkit \
     --oci-worker true \
     --containerd-worker false \
     --oci-worker-snapshotter native \
-    --config /config/buildkitd/main.toml)
+    --config "$XDG_CONFIG_DIRS"/buildkitd/main.toml)
 
 [ "$LOG_LEVEL" != "debug" ] || args+=(--debug)
 
 [ "${MOD_METRICS_ENABLED:-}" != true ] || args+=(--debugaddr "${MOD_METRICS_BIND:-:4242}")
 
 [ "${DUBO_EXPERIMENTAL:-}" ] \
-  && com+=(--addr unix:///data/buildkitd.sock) \
+  && com+=(--addr unix:///"$XDG_RUNTIME_DIR"/buildkit/buildkitd.sock) \
   || com+=(--addr tcp://0.0.0.0:"${ADVANCED_PORT_HTTPS:-443}")
 
 # Start either buildkit or ghost for the TLS termination
 if [ "${TLS:-}" ]; then
   if [ ! "${DUBO_EXPERIMENTAL:-}" ]; then
-    com+=(--tlscert /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".crt \
-      --tlskey /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key \
-      --tlscacert /certs/pki/authorities/local/root.crt)
+    com+=(--tlscert "$XDG_DATA_HOME"/certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".crt \
+      --tlskey "$XDG_DATA_HOME"/certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key \
+      --tlscacert "$XDG_DATA_HOME"/certs/pki/authorities/local/root.crt)
 
-    while [ ! -e /certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key ]; do
+    while [ ! -e "$XDG_DATA_HOME"/certs/certificates/local/"${DOMAIN:-}/${DOMAIN:-}".key ]; do
       echo "Buildkit is waiting on certificate to be ready"
       sleep 1
     done
   else
-    tls::start :4242 /data/buildkitd.sock
+    tls::start :4242 "$XDG_RUNTIME_DIR"/buildkit/buildkitd.sock
   fi
 fi
 
 if [ "${ROOTLESS:-}" ]; then
   com+=(--rootless)
-  exec rootlesskit --state-dir /data/rootlesskit "${com[@]}"
+  exec rootlesskit --state-dir "$XDG_DATA_HOME"/buildkit/rootlesskit "${com[@]}"
 else
   exec "${com[@]}"
 fi
